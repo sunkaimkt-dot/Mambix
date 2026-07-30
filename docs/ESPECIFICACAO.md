@@ -192,6 +192,18 @@ Versão paginada para impressão: códigos 1–50 / 51–100 / totalizadores por
 
 ---
 
+## 5.13 Importação em massa — Excel e PDF (planejado)
+
+Módulo para o consultor subir dados sem digitar lançamento a lançamento:
+
+- **Excel/CSV**: importar planilhas de Pagamentos, Receitas e Caixa Diário. Tela de conferência ("de-para") ligando as colunas do arquivo aos campos do sistema, com pré-visualização e validação antes de gravar. Deve aceitar as planilhas mensais que o consultor já usa hoje, servindo também para migrar o histórico.
+- **PDF**: leitura de extratos bancários e faturas de cartão, com extração de data, descrição e valor; a classificação (código de despesa, CFC) é sugerida e confirmada pelo usuário.
+- Regras: detectar duplicidade antes de gravar, permitir desfazer uma importação inteira (lote identificado), e nunca gravar sem confirmação humana.
+
+**Prioridade: alta** — é o que elimina o trabalho manual do consultor. Entra logo após os relatórios principais.
+
+---
+
 ## 6. Módulo futuro (fora do escopo v1)
 
 Balanço Patrimonial: abas "ENTRADA - BALANÇO", "BALANÇO + DRE COM ÍNDICES", evoluções de Ativo/Passivo/PL e "INDICADORES FINANCEIROS". O cliente pediu explicitamente para deixar para depois. A modelagem do banco deve permitir acoplar esse módulo sem retrabalho.
