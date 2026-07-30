@@ -10,3 +10,4 @@ Substitui o modelo de planilhas Excel mensais por banco de dados contínuo.
 ## Estrutura do projeto
 - `docs/` — especificação e documentação
 - `app/` — aplicação Next.js (em construção)
+
