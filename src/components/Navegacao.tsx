@@ -9,6 +9,7 @@ const GRUPOS = [
       { href: "/pagamentos", rotulo: "Pagamentos" },
       { href: "/receitas", rotulo: "Receitas" },
       { href: "/caixa", rotulo: "Caixa Diário" },
+      { href: "/parametros", rotulo: "Parâmetros do mês" },
     ],
   },
   {

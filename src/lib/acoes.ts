@@ -78,3 +78,22 @@ export async function excluirLancamento(tabela: "pagamentos" | "receitas" | "cai
   revalidatePath("/receitas");
   revalidatePath("/caixa");
 }
+
+export async function salvarParametros(fd: FormData) {
+  const supabase = await supabaseServer();
+  const margemTxt = texto(fd, "margem");
+  const clientesTxt = texto(fd, "clientes");
+  const { error } = await supabase.from("parametros_mes").upsert(
+    {
+      empresa_id: texto(fd, "empresa_id")!,
+      ano: Number(fd.get("ano")),
+      mes: Number(fd.get("mes")),
+      margem_bruta_pct: margemTxt ? Number(margemTxt.replace(",", ".")) / 100 : null,
+      clientes: clientesTxt ? Number(clientesTxt) : null,
+    },
+    { onConflict: "empresa_id,ano,mes" }
+  );
+  if (error) throw new Error(error.message);
+  revalidatePath("/parametros");
+  revalidatePath("/dre");
+}
