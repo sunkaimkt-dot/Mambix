@@ -29,14 +29,10 @@ export default function FormReceita({
       action={async (fd) => {
         setErro(null);
         setSalvando(true);
-        try {
-          await salvarReceita(fd);
-          ref.current?.reset();
-        } catch (e) {
-          setErro(e instanceof Error ? e.message : "Erro ao salvar");
-        } finally {
-          setSalvando(false);
-        }
+        const r = await salvarReceita(fd);
+        setSalvando(false);
+        if (r.ok) ref.current?.reset();
+        else setErro(r.erro ?? "Não foi possível salvar.");
       }}
       className="grid grid-cols-2 gap-3 md:grid-cols-6"
     >

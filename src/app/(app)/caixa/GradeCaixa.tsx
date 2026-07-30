@@ -24,6 +24,7 @@ export default function GradeCaixa({
   const [dados, setDados] = useState(valores);
   const [salvando, iniciar] = useTransition();
   const [editando, setEditando] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
 
   function chave(dia: number, tipo: number) {
     return `${dia}-${tipo}`;
@@ -39,7 +40,10 @@ export default function GradeCaixa({
     fd.set("data", `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`);
     fd.set("tipo_venda", String(tipo));
     fd.set("valor", String(valor));
-    iniciar(() => void salvarCaixa(fd));
+    iniciar(async () => {
+      const r = await salvarCaixa(fd);
+      setErro(r.ok ? null : r.erro ?? "Não foi possível salvar.");
+    });
   }
 
   const totalTipo = (t: number) =>
@@ -50,6 +54,7 @@ export default function GradeCaixa({
   return (
     <div className="overflow-x-auto">
       {salvando && <p className="px-3 py-1 text-xs text-emerald-600">salvando…</p>}
+      {erro && <p className="px-3 py-1 text-xs text-red-600">{erro}</p>}
       <table className="w-full text-sm">
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>

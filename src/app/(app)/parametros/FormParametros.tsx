@@ -26,14 +26,10 @@ export default function FormParametros({
         setSalvando(true);
         setOk(false);
         setErro(null);
-        try {
-          await salvarParametros(fd);
-          setOk(true);
-        } catch (e) {
-          setErro(e instanceof Error ? e.message : "Erro ao salvar");
-        } finally {
-          setSalvando(false);
-        }
+        const r = await salvarParametros(fd);
+        setSalvando(false);
+        if (r.ok) setOk(true);
+        else setErro(r.erro ?? "Não foi possível salvar.");
       }}
       className="space-y-4"
     >
