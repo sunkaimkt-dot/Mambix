@@ -2,35 +2,56 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
-const GRUPOS = [
+type Item = { href: string; rotulo: string; pronto: boolean };
+
+const GRUPOS: { titulo: string; itens: Item[] }[] = [
   {
     titulo: "Lançamentos",
     itens: [
-      { href: "/pagamentos", rotulo: "Pagamentos" },
-      { href: "/receitas", rotulo: "Receitas" },
-      { href: "/caixa", rotulo: "Caixa Diário" },
-      { href: "/parametros", rotulo: "Parâmetros do mês" },
+      { href: "/pagamentos", rotulo: "Pagamentos", pronto: true },
+      { href: "/receitas", rotulo: "Receitas", pronto: true },
+      { href: "/caixa", rotulo: "Caixa Diário", pronto: true },
+      { href: "/parametros", rotulo: "Parâmetros do mês", pronto: true },
+      { href: "/importar", rotulo: "Importar Excel / PDF", pronto: false },
     ],
   },
   {
     titulo: "Relatórios",
     itens: [
-      { href: "/dre", rotulo: "DRE Gerencial" },
-      { href: "/dfc", rotulo: "Fluxo de Caixa (DFC)" },
-      { href: "/fluxo-diario", rotulo: "Fluxo Diário" },
-      { href: "/faturamento-diario", rotulo: "Faturamento Diário" },
+      { href: "/dre", rotulo: "DRE Gerencial", pronto: true },
+      { href: "/dfc", rotulo: "Fluxo de Caixa (DFC)", pronto: true },
+      { href: "/dre-contabil", rotulo: "DRE Contábil", pronto: false },
+      { href: "/fluxo-contabil", rotulo: "Fluxo Contábil", pronto: false },
+      { href: "/fluxo-diario", rotulo: "Fluxo Diário", pronto: false },
+      { href: "/faturamento-diario", rotulo: "Faturamento Diário", pronto: false },
+      { href: "/impressao", rotulo: "Impressão / PDF", pronto: false },
     ],
   },
   {
     titulo: "Análises",
     itens: [
-      { href: "/evolucao-dre", rotulo: "Evolução DRE" },
-      { href: "/evolucao-dfc", rotulo: "Evolução DFC" },
-      { href: "/simulador", rotulo: "Simulador" },
-      { href: "/familia", rotulo: "DRE Família" },
+      { href: "/evolucao-dre", rotulo: "Evolução DRE", pronto: false },
+      { href: "/evolucao-dfc", rotulo: "Evolução DFC", pronto: false },
+      { href: "/graficos", rotulo: "Gráficos", pronto: false },
+      { href: "/simulador", rotulo: "Simulador de cenários", pronto: false },
+      { href: "/familia", rotulo: "DRE Família", pronto: false },
     ],
   },
 ];
+
+function Cadeado() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 shrink-0" aria-hidden="true">
+      <path
+        d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v10H5V10Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export default function Navegacao() {
   const pathname = usePathname();
@@ -47,29 +68,44 @@ export default function Navegacao() {
       >
         Painel
       </Link>
+
       {GRUPOS.map((g) => (
         <div key={g.titulo}>
-          <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-            {g.titulo}
-          </p>
+          <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">{g.titulo}</p>
           <ul className="space-y-0.5">
-            {g.itens.map((i) => (
-              <li key={i.href}>
-                <Link
-                  href={`${i.href}${qs ? `?${qs}` : ""}`}
-                  className={`block rounded-lg px-3 py-2 text-sm ${
-                    pathname === i.href
-                      ? "bg-emerald-50 font-medium text-emerald-700"
-                      : "text-slate-600 hover:bg-slate-100"
-                  }`}
-                >
-                  {i.rotulo}
-                </Link>
-              </li>
-            ))}
+            {g.itens.map((i) =>
+              i.pronto ? (
+                <li key={i.href}>
+                  <Link
+                    href={`${i.href}${qs ? `?${qs}` : ""}`}
+                    className={`block rounded-lg px-3 py-2 text-sm ${
+                      pathname === i.href
+                        ? "bg-emerald-50 font-medium text-emerald-700"
+                        : "text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    {i.rotulo}
+                  </Link>
+                </li>
+              ) : (
+                <li key={i.href}>
+                  <span
+                    title="Em construção — ainda não disponível para teste"
+                    className="flex cursor-not-allowed items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-300"
+                  >
+                    <Cadeado />
+                    {i.rotulo}
+                  </span>
+                </li>
+              )
+            )}
           </ul>
         </div>
       ))}
+
+      <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-400">
+        Itens com cadeado estão em construção e serão liberados nas próximas etapas.
+      </p>
     </nav>
   );
 }
