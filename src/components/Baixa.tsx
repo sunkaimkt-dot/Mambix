@@ -50,17 +50,32 @@ export default function Baixa({
   const rotulo = quitado ? "Pago" : parcial ? `Parcial · falta ${brl(saldo)}` : "Em aberto";
 
   return (
-    <div className="relative">
+    <>
       <button
         type="button"
         onClick={() => setAberto((v) => !v)}
-        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${cor}`}
+        className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${cor}`}
       >
         {rotulo}
       </button>
 
+      {/* Modal, nao popover: a tabela vive dentro de um container com rolagem
+          horizontal, e um menu posicionado por absolute era cortado por ele. */}
       {aberto && (
-        <div className="absolute right-0 z-20 mt-1 w-80 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4"
+          onClick={() => setAberto(false)}
+        >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl"
+        >
+          <div className="mb-3 flex items-baseline justify-between gap-2">
+            <p className="text-sm font-semibold">Registrar pagamento</p>
+            <span className="text-xs text-slate-500">
+              total {brl(valor)}
+            </span>
+          </div>
           {baixas.length > 0 && (
             <div className="mb-3">
               <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
@@ -168,8 +183,19 @@ export default function Baixa({
               {erro && <p className="text-sm text-red-600">{erro}</p>}
             </form>
           )}
+
+          {quitado && (
+            <button
+              type="button"
+              onClick={() => setAberto(false)}
+              className="mt-3 w-full rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200"
+            >
+              Fechar
+            </button>
+          )}
+        </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
