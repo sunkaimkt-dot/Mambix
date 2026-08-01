@@ -66,29 +66,34 @@ export async function dadosDRE(empresaId: string, ano: number, mes: number, loja
   return { porCodigo, grupos, porTipoVenda, faturamento, despesas, margem, lucroBruto, cmv, resultado };
 }
 
-/** DFC = regime de caixa: so o que foi pago/recebido dentro do mes. */
+/**
+ * DFC = regime de caixa. Le das BAIXAS, nao dos pagamentos: o que importa aqui e
+ * o dia em que o dinheiro saiu, que pode ser de mes diferente do vencimento.
+ * Um aluguel que venceu em junho e foi pago em julho aparece no DFC de julho.
+ */
 export async function dadosDFC(empresaId: string, ano: number, mes: number, lojaId: string | null) {
   const supabase = await supabaseServer();
   const ini = primeiroDia(ano, mes);
   const fim = ultimoDia(ano, mes);
 
-  let q = supabase
-    .from("pagamentos")
-    .select("cd, cfc, valor, loja_id")
+  const q = supabase
+    .from("pagamento_baixas")
+    .select("valor, pagamentos!inner(cd, cfc, loja_id)")
     .eq("empresa_id", empresaId)
-    .eq("pago", true)
-    .gte("data", ini)
-    .lte("data", fim);
-  if (lojaId) q = q.eq("loja_id", lojaId);
+    .gte("data_pagamento", ini)
+    .lte("data_pagamento", fim);
 
-  const [pagRes, recRes, codigosRes, tiposRes] = await Promise.all([
+  const [baixaRes, recRes, codigosRes, tiposRes] = await Promise.all([
     q,
     supabase.from("receitas").select("tipo_recebimento, valor").eq("empresa_id", empresaId).gte("data", ini).lte("data", fim),
     supabase.from("codigos_despesa").select("codigo, nome").eq("empresa_id", empresaId).order("codigo"),
     supabase.from("tipos_recebimento").select("codigo, nome").eq("empresa_id", empresaId).order("codigo"),
   ]);
 
-  const pagamentos = pagRes.data ?? [];
+  type BaixaJoin = { valor: number; pagamentos: { cd: number; cfc: number; loja_id: string | null } | null };
+  const pagamentos = ((baixaRes.data ?? []) as unknown as BaixaJoin[])
+    .filter((b) => b.pagamentos && (!lojaId || b.pagamentos.loja_id === lojaId))
+    .map((b) => ({ valor: Number(b.valor), cd: b.pagamentos!.cd, cfc: b.pagamentos!.cfc }));
   const porCodigo: LinhaCodigo[] = (codigosRes.data ?? []).map((c) => ({
     codigo: c.codigo,
     nome: c.nome,
@@ -118,4 +123,64 @@ export async function dadosDFC(empresaId: string, ano: number, mes: number, loja
   const saidas = pagamentos.reduce((s, p) => s + Number(p.valor), 0);
 
   return { porCodigo, grupos, porTipoRecebimento, porCFC, entradas, saidas, resultado: entradas - saidas };
+}
+
+export type SerieAnual = {
+  codigo: number;
+  nome: string;
+  regime: "competencia" | "caixa";
+  ano: number;
+  meses: number[]; // 12 posicoes, janeiro a dezembro
+};
+
+/**
+ * Evolucao de 12 meses de um codigo de despesa.
+ * O regime acompanha a tela de origem: na DRE olha a competencia, no DFC olha
+ * a data em que o dinheiro saiu. O mesmo codigo pode ter curvas diferentes nos
+ * dois relatorios -- e justamente essa diferenca que revela atraso de pagamento.
+ */
+export async function serieAnualCodigo(
+  empresaId: string,
+  codigo: number,
+  ano: number,
+  regime: "competencia" | "caixa",
+  lojaId: string | null
+): Promise<SerieAnual> {
+  const supabase = await supabaseServer();
+  const meses = Array(12).fill(0) as number[];
+
+  const { data: cod } = await supabase
+    .from("codigos_despesa")
+    .select("nome")
+    .eq("empresa_id", empresaId)
+    .eq("codigo", codigo)
+    .maybeSingle();
+
+  if (regime === "competencia") {
+    let q = supabase
+      .from("pagamentos")
+      .select("comp_mes, valor, loja_id")
+      .eq("empresa_id", empresaId)
+      .eq("cd", codigo)
+      .eq("comp_ano", ano);
+    if (lojaId) q = q.eq("loja_id", lojaId);
+    const { data } = await q;
+    for (const p of data ?? []) meses[p.comp_mes - 1] += Number(p.valor);
+  } else {
+    const { data } = await supabase
+      .from("pagamento_baixas")
+      .select("data_pagamento, valor, pagamentos!inner(cd, loja_id)")
+      .eq("empresa_id", empresaId)
+      .eq("pagamentos.cd", codigo)
+      .gte("data_pagamento", `${ano}-01-01`)
+      .lte("data_pagamento", `${ano}-12-31`);
+
+    type Linha = { data_pagamento: string; valor: number; pagamentos: { loja_id: string | null } | null };
+    for (const b of (data ?? []) as unknown as Linha[]) {
+      if (lojaId && b.pagamentos?.loja_id !== lojaId) continue;
+      meses[Number(b.data_pagamento.slice(5, 7)) - 1] += Number(b.valor);
+    }
+  }
+
+  return { codigo, nome: cod?.nome ?? "", regime, ano, meses };
 }

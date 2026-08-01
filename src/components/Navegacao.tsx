@@ -3,12 +3,14 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
 type Item = { href: string; rotulo: string; pronto: boolean };
+type Grupo = { titulo: string; itens: Item[]; soGestor?: boolean };
 
-const GRUPOS: { titulo: string; itens: Item[] }[] = [
+const GRUPOS: Grupo[] = [
   {
     titulo: "Lançamentos",
     itens: [
       { href: "/pagamentos", rotulo: "Pagamentos", pronto: true },
+      { href: "/em-aberto", rotulo: "Contas em aberto", pronto: true },
       { href: "/receitas", rotulo: "Receitas", pronto: true },
       { href: "/caixa", rotulo: "Caixa Diário", pronto: true },
       { href: "/parametros", rotulo: "Parâmetros do mês", pronto: true },
@@ -37,6 +39,14 @@ const GRUPOS: { titulo: string; itens: Item[] }[] = [
       { href: "/familia", rotulo: "DRE Família", pronto: false },
     ],
   },
+  {
+    titulo: "Administração",
+    soGestor: true,
+    itens: [
+      { href: "/carteira", rotulo: "Minha carteira", pronto: true },
+      { href: "/codigos", rotulo: "Códigos e listas", pronto: true },
+    ],
+  },
 ];
 
 function Cadeado() {
@@ -53,10 +63,14 @@ function Cadeado() {
   );
 }
 
-export default function Navegacao() {
+export default function Navegacao({ papel = "empresario" }: { papel?: "plataforma" | "gestor" | "empresario" }) {
   const pathname = usePathname();
   const sp = useSearchParams();
   const qs = sp.toString();
+
+  // Cliente final nao ve a area de administracao. Isso e conveniencia de tela --
+  // o bloqueio de verdade esta no RLS: mesmo digitando a URL ele nao ve dado alheio.
+  const grupos = GRUPOS.filter((g) => !g.soGestor || papel !== "empresario");
 
   return (
     <nav className="space-y-6">
@@ -69,7 +83,7 @@ export default function Navegacao() {
         Painel
       </Link>
 
-      {GRUPOS.map((g) => (
+      {grupos.map((g) => (
         <div key={g.titulo}>
           <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">{g.titulo}</p>
           <ul className="space-y-0.5">

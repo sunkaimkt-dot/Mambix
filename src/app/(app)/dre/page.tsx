@@ -106,7 +106,13 @@ export default async function DRE({
       </Cartao>
 
       <Cartao className="p-4">
-        <TabelaCodigos linhas={d.porCodigo} base={base} titulo="Detalhamento por código (1 a 100)" />
+        <TabelaCodigos
+          linhas={d.porCodigo}
+          base={base}
+          titulo="Detalhamento por código (1 a 100)"
+          regime="competencia"
+          qs={qs}
+        />
       </Cartao>
     </main>
   );

@@ -1,5 +1,7 @@
 import { supabaseServer } from "@/lib/supabase-server";
 
+export type Papel = "plataforma" | "gestor" | "empresario";
+
 export type Contexto = {
   empresaId: string;
   empresaNome: string;
@@ -8,7 +10,15 @@ export type Contexto = {
   empresas: { id: string; nome: string }[];
   lojas: { id: string; nome: string; is_matriz: boolean }[];
   lojaId: string | null;
+  papel: Papel;
 };
+
+/** Papel do usuario logado. Define o que aparece na navegacao. */
+export async function meuPapel(): Promise<Papel> {
+  const supabase = await supabaseServer();
+  const { data } = await supabase.from("perfis").select("papel").maybeSingle();
+  return (data?.papel as Papel) ?? "empresario";
+}
 
 export async function carregarContexto(sp: Record<string, string | string[] | undefined>): Promise<Contexto | null> {
   const supabase = await supabaseServer();
@@ -38,6 +48,7 @@ export async function carregarContexto(sp: Record<string, string | string[] | un
     empresas,
     lojas: lojas ?? [],
     lojaId: lojaPedida && lojaPedida !== "todas" ? lojaPedida : null,
+    papel: await meuPapel(),
   };
 }
 

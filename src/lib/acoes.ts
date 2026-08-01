@@ -30,23 +30,101 @@ export async function salvarPagamento(fd: FormData): Promise<Resultado> {
   if (!cd) return { ok: false, erro: "Selecione o código da despesa." };
 
   const supabase = await supabaseServer();
-  const { error } = await supabase.from("pagamentos").insert({
-    empresa_id: texto(fd, "empresa_id")!,
-    loja_id: texto(fd, "loja_id"),
-    data: texto(fd, "data")!,
-    cfc: Number(fd.get("cfc")),
-    cd,
-    descricao: texto(fd, "descricao") ?? "",
-    comp_mes: Number(fd.get("comp_mes")),
-    comp_ano: Number(fd.get("comp_ano")),
+  const empresaId = texto(fd, "empresa_id")!;
+  const vencimento = texto(fd, "vencimento")!;
+
+  const { data: criado, error } = await supabase
+    .from("pagamentos")
+    .insert({
+      empresa_id: empresaId,
+      loja_id: texto(fd, "loja_id"),
+      vencimento,
+      cfc: Number(fd.get("cfc")),
+      cd,
+      descricao: texto(fd, "descricao") ?? "",
+      comp_mes: Number(fd.get("comp_mes")),
+      comp_ano: Number(fd.get("comp_ano")),
+      valor,
+      banco_id: texto(fd, "banco_id"),
+      cp: fd.get("cp") ? Number(fd.get("cp")) : null,
+      cod_familia: fd.get("cod_familia") ? Number(fd.get("cod_familia")) : null,
+    })
+    .select("id")
+    .single();
+  if (error) return { ok: false, erro: amigavel(error.message) };
+
+  // "Ja pago" no formulario e um atalho: registra a baixa integral na data
+  // informada. O campo pago nunca e gravado direto -- ele deriva das baixas.
+  if (fd.get("ja_pago") === "on" && criado) {
+    const dataPag = texto(fd, "data_pagamento") ?? vencimento;
+    const { error: e2 } = await supabase.from("pagamento_baixas").insert({
+      empresa_id: empresaId,
+      pagamento_id: criado.id,
+      data_pagamento: dataPag,
+      valor,
+      banco_id: texto(fd, "banco_id"),
+      cp: fd.get("cp") ? Number(fd.get("cp")) : null,
+    });
+    if (e2) return { ok: false, erro: amigavel(e2.message) };
+  }
+
+  revalidatePath("/pagamentos");
+  revalidatePath("/em-aberto");
+  return { ok: true };
+}
+
+/**
+ * Registra uma saida de dinheiro. Aceita valor menor que o saldo (pagamento
+ * parcial) e data em mes diferente do vencimento (conta atrasada).
+ * Nao cria lancamento novo -- e por isso que pagar em julho o aluguel de junho
+ * nao duplica a DRE de junho.
+ */
+export async function registrarBaixa(fd: FormData): Promise<Resultado> {
+  const pagamentoId = texto(fd, "pagamento_id");
+  const dataPagamento = texto(fd, "data_pagamento");
+  const valor = numero(fd, "valor");
+
+  if (!pagamentoId) return { ok: false, erro: "Lançamento não identificado." };
+  if (!dataPagamento) return { ok: false, erro: "Informe a data em que o pagamento saiu." };
+  if (valor === null || valor <= 0) return { ok: false, erro: "Informe um valor válido." };
+
+  const supabase = await supabaseServer();
+  const { data: pag, error: erroBusca } = await supabase
+    .from("pagamentos_saldo")
+    .select("empresa_id, saldo")
+    .eq("id", pagamentoId)
+    .maybeSingle();
+  if (erroBusca) return { ok: false, erro: amigavel(erroBusca.message) };
+  if (!pag) return { ok: false, erro: "Lançamento não encontrado." };
+
+  if (valor > Number(pag.saldo) + 0.01) {
+    return { ok: false, erro: `O valor excede o saldo em aberto (${Number(pag.saldo).toFixed(2)}).` };
+  }
+
+  const { error } = await supabase.from("pagamento_baixas").insert({
+    empresa_id: pag.empresa_id,
+    pagamento_id: pagamentoId,
+    data_pagamento: dataPagamento,
     valor,
     banco_id: texto(fd, "banco_id"),
     cp: fd.get("cp") ? Number(fd.get("cp")) : null,
-    pago: fd.get("pago") === "on",
-    cod_familia: fd.get("cod_familia") ? Number(fd.get("cod_familia")) : null,
   });
   if (error) return { ok: false, erro: amigavel(error.message) };
+
   revalidatePath("/pagamentos");
+  revalidatePath("/em-aberto");
+  revalidatePath("/dfc");
+  return { ok: true };
+}
+
+/** Desfaz uma baixa. A conta volta a ficar em aberto pelo valor estornado. */
+export async function estornarBaixa(id: string): Promise<Resultado> {
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from("pagamento_baixas").delete().eq("id", id);
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/pagamentos");
+  revalidatePath("/em-aberto");
+  revalidatePath("/dfc");
   return { ok: true };
 }
 
@@ -106,11 +184,113 @@ export async function salvarParametros(fd: FormData): Promise<Resultado> {
   return { ok: true };
 }
 
-export async function alternarPago(id: string, pago: boolean): Promise<Resultado> {
+/** Salva os nomes dos codigos de uma empresa (despesa, formas, tipos). */
+export async function salvarCodigos(fd: FormData): Promise<Resultado> {
+  const empresaId = texto(fd, "empresa_id");
+  const tabela = texto(fd, "tabela");
+  const permitidas = ["codigos_despesa", "codigos_familia", "formas_pagamento", "tipos_recebimento", "tipos_venda"];
+  if (!empresaId || !tabela || !permitidas.includes(tabela)) {
+    return { ok: false, erro: "Tabela inválida." };
+  }
+
   const supabase = await supabaseServer();
-  const { error } = await supabase.from("pagamentos").update({ pago }).eq("id", id);
-  if (error) return { ok: false, erro: amigavel(error.message) };
+  const alteracoes: { codigo: number; nome: string }[] = [];
+  for (const [chave, valor] of Array.from(fd.entries())) {
+    const m = chave.match(/^nome_(\d+)$/);
+    if (m && typeof valor === "string") {
+      alteracoes.push({ codigo: Number(m[1]), nome: valor.trim() });
+    }
+  }
+  if (alteracoes.length === 0) return { ok: true };
+
+  // Um update por codigo: o upsert exigiria reenviar o grupo, que e fixo.
+  for (const a of alteracoes) {
+    const { error } = await supabase
+      .from(tabela)
+      .update({ nome: a.nome })
+      .eq("empresa_id", empresaId)
+      .eq("codigo", a.codigo);
+    if (error) return { ok: false, erro: amigavel(error.message) };
+  }
+
+  revalidatePath("/codigos");
   revalidatePath("/pagamentos");
+  return { ok: true };
+}
+
+// ============================================================
+// Carteira do gestor
+// ============================================================
+
+export async function salvarCliente(fd: FormData): Promise<Resultado> {
+  const nome = texto(fd, "nome");
+  if (!nome) return { ok: false, erro: "Informe o nome do cliente." };
+
+  const supabase = await supabaseServer();
+  const { data: perfil } = await supabase.from("perfis").select("gestor_id, papel").maybeSingle();
+
+  // A plataforma escolhe a carteira; o gestor so cria dentro da propria.
+  const gestorId = perfil?.papel === "plataforma" ? texto(fd, "gestor_id") : perfil?.gestor_id;
+  if (!gestorId) return { ok: false, erro: "Sua conta não está vinculada a nenhuma carteira." };
+
+  const { error } = await supabase.from("clientes").insert({ gestor_id: gestorId, nome });
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/carteira");
+  return { ok: true };
+}
+
+export async function salvarEmpresa(fd: FormData): Promise<Resultado> {
+  const nome = texto(fd, "nome");
+  const clienteId = texto(fd, "cliente_id");
+  if (!nome) return { ok: false, erro: "Informe o nome da empresa." };
+  if (!clienteId) return { ok: false, erro: "Selecione o cliente." };
+
+  const supabase = await supabaseServer();
+  // O trigger do banco semeia os 100 codigos e a loja matriz automaticamente.
+  const { error } = await supabase.from("empresas").insert({ nome, cliente_id: clienteId });
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/carteira");
+  return { ok: true };
+}
+
+export async function criarConvite(fd: FormData): Promise<{ ok: boolean; erro?: string; token?: string }> {
+  const email = texto(fd, "email");
+  const clienteId = texto(fd, "cliente_id");
+  if (!email) return { ok: false, erro: "Informe o e-mail de quem vai receber o convite." };
+  if (!clienteId) return { ok: false, erro: "Selecione o cliente." };
+
+  const token = crypto.randomUUID().replace(/-/g, "");
+  const supabase = await supabaseServer();
+  const { data: sessao } = await supabase.auth.getUser();
+
+  const { error } = await supabase.from("convites").insert({
+    token,
+    email: email.toLowerCase(),
+    papel: "empresario",
+    cliente_id: clienteId,
+    criado_por: sessao.user?.id ?? null,
+  });
+  if (error) return { ok: false, erro: amigavel(error.message) };
+
+  revalidatePath("/carteira");
+  return { ok: true, token };
+}
+
+export async function revogarConvite(id: string): Promise<Resultado> {
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from("convites").delete().eq("id", id);
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/carteira");
+  return { ok: true };
+}
+
+export async function aceitarConvite(token: string): Promise<Resultado> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.rpc("aceitar_convite", { p_token: token });
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  const r = data as { ok: boolean; erro?: string };
+  if (!r?.ok) return { ok: false, erro: r?.erro ?? "Não foi possível aceitar o convite." };
+  revalidatePath("/dashboard");
   return { ok: true };
 }
 

@@ -24,11 +24,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <p className="text-xs text-slate-500">Gestão financeira</p>
         </div>
         <Suspense fallback={null}>
-          <Navegacao />
+          <Navegacao papel={(perfil?.papel as "plataforma" | "gestor" | "empresario") ?? "empresario"} />
         </Suspense>
         <div className="mt-8 border-t border-slate-200 px-3 pt-4">
           <p className="truncate text-sm font-medium">{perfil?.nome ?? user.email}</p>
-          <p className="mb-2 text-xs capitalize text-slate-500">{perfil?.papel ?? "sem perfil"}</p>
+          <p className="mb-2 text-xs text-slate-500">
+            {perfil?.papel === "plataforma"
+              ? "Leads de Sucesso"
+              : perfil?.papel === "gestor"
+                ? "Gestor financeiro"
+                : perfil?.papel === "empresario"
+                  ? "Cliente"
+                  : "sem perfil"}
+          </p>
           <form action="/auth/signout" method="post">
             <button className="text-xs text-slate-500 underline hover:text-slate-800">Sair</button>
           </form>

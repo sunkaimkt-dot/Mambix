@@ -17,6 +17,10 @@ export default async function DFC({
   const d = await dadosDFC(ctx.empresaId, ctx.ano, ctx.mes, ctx.lojaId);
   const base = d.entradas;
 
+  const qs = new URLSearchParams(
+    Object.entries(sp).filter(([, v]) => typeof v === "string") as [string, string][]
+  ).toString();
+
   return (
     <main className="p-6">
       <Cabecalho
@@ -95,7 +99,13 @@ export default async function DFC({
       </div>
 
       <Cartao className="p-4">
-        <TabelaCodigos linhas={d.porCodigo} base={base} titulo="Detalhamento por código (1 a 100)" />
+        <TabelaCodigos
+          linhas={d.porCodigo}
+          base={base}
+          titulo="Detalhamento por código (1 a 100)"
+          regime="caixa"
+          qs={qs}
+        />
       </Cartao>
     </main>
   );

@@ -23,18 +23,23 @@ export default async function Painel({
   const ini = primeiroDia(ctx.ano, ctx.mes);
   const fim = ultimoDia(ctx.ano, ctx.mes);
 
-  const [vendas, recebido, pagoRes, aPagarRes] = await Promise.all([
+  const [vendas, recebido, pagoRes, aPagarRes, atrasadoRes] = await Promise.all([
     supabase.from("caixa_diario").select("valor").eq("empresa_id", ctx.empresaId).gte("data", ini).lte("data", fim),
     supabase.from("receitas").select("valor").eq("empresa_id", ctx.empresaId).gte("data", ini).lte("data", fim),
-    supabase.from("pagamentos").select("valor").eq("empresa_id", ctx.empresaId).eq("pago", true).gte("data", ini).lte("data", fim),
-    supabase.from("pagamentos").select("valor").eq("empresa_id", ctx.empresaId).eq("pago", false).eq("comp_ano", ctx.ano).eq("comp_mes", ctx.mes),
+    // Saidas do mes = baixas, nao vencimentos: e a data do pagamento que conta.
+    supabase.from("pagamento_baixas").select("valor").eq("empresa_id", ctx.empresaId).gte("data_pagamento", ini).lte("data_pagamento", fim),
+    supabase.from("pagamentos_saldo").select("saldo").eq("empresa_id", ctx.empresaId).eq("comp_ano", ctx.ano).eq("comp_mes", ctx.mes),
+    // Contas vencidas antes do mes e ainda nao quitadas.
+    supabase.from("pagamentos_saldo").select("saldo").eq("empresa_id", ctx.empresaId).eq("pago", false).lt("vencimento", ini),
   ]);
 
   const soma = (r: { data: { valor: number }[] | null }) => (r.data ?? []).reduce((s, x) => s + Number(x.valor), 0);
+  const somaSaldo = (r: { data: { saldo: number }[] | null }) => (r.data ?? []).reduce((s, x) => s + Number(x.saldo), 0);
   const faturamento = soma(vendas);
   const entradas = soma(recebido);
   const saidas = soma(pagoRes);
-  const aPagar = soma(aPagarRes);
+  const aPagar = somaSaldo(aPagarRes);
+  const atrasado = somaSaldo(atrasadoRes);
 
   const cards = [
     { rotulo: "Faturamento (vendas)", valor: faturamento, cor: "text-slate-900" },
@@ -42,6 +47,7 @@ export default async function Painel({
     { rotulo: "Saídas do caixa", valor: saidas, cor: "text-red-700" },
     { rotulo: "Resultado de caixa", valor: entradas - saidas, cor: entradas - saidas >= 0 ? "text-emerald-700" : "text-red-700" },
     { rotulo: "Contas em aberto no mês", valor: aPagar, cor: "text-amber-700" },
+    { rotulo: "Atrasado de meses anteriores", valor: atrasado, cor: atrasado > 0 ? "text-red-700" : "text-slate-400" },
   ];
 
   const qs = new URLSearchParams(

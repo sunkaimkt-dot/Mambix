@@ -3,7 +3,7 @@ import { supabaseServer } from "@/lib/supabase-server";
 import Cabecalho from "@/components/Cabecalho";
 import FormPagamento from "./FormPagamento";
 import BotaoExcluir from "@/components/BotaoExcluir";
-import InterruptorPago from "@/components/InterruptorPago";
+import Baixa from "@/components/Baixa";
 import { Cartao, Vazio } from "@/components/ui";
 import { brl, MESES, GRUPOS_DRE, GRUPOS_DFC_EXTRA } from "@/lib/formato";
 
@@ -23,12 +23,12 @@ export default async function Pagamentos({
     supabase.from("bancos").select("id, nome").eq("empresa_id", ctx.empresaId).eq("ativo", true).order("nome"),
     supabase.from("codigos_familia").select("codigo, nome").eq("empresa_id", ctx.empresaId).order("codigo"),
     supabase
-      .from("pagamentos")
-      .select("id, data, cfc, cd, descricao, valor, pago, cp, comp_mes, comp_ano, loja_id, banco_id, cod_familia")
+      .from("pagamentos_saldo")
+      .select("id, vencimento, cfc, cd, descricao, valor, pago, cp, comp_mes, comp_ano, loja_id, banco_id, total_pago, saldo")
       .eq("empresa_id", ctx.empresaId)
       .eq("comp_ano", ctx.ano)
       .eq("comp_mes", ctx.mes)
-      .order("data"),
+      .order("vencimento"),
   ]);
 
   const codigos = (codigosRes.data ?? []).filter((c) => c.nome !== "");
@@ -37,8 +37,22 @@ export default async function Pagamentos({
   const nomeBanco = new Map((bancosRes.data ?? []).map((b) => [b.id, b.nome]));
   const lista = (listaRes.data ?? []).filter((p) => !ctx.lojaId || p.loja_id === ctx.lojaId);
 
+  // Baixas de todos os lancamentos da tela, para montar o historico de cada linha.
+  const { data: baixasData } = await supabase
+    .from("pagamento_baixas")
+    .select("id, pagamento_id, data_pagamento, valor")
+    .in("pagamento_id", lista.length ? lista.map((p) => p.id) : ["00000000-0000-0000-0000-000000000000"])
+    .order("data_pagamento");
+
+  const baixasPor = new Map<string, { id: string; data_pagamento: string; valor: number }[]>();
+  for (const b of baixasData ?? []) {
+    const arr = baixasPor.get(b.pagamento_id) ?? [];
+    arr.push({ id: b.id, data_pagamento: b.data_pagamento, valor: Number(b.valor) });
+    baixasPor.set(b.pagamento_id, arr);
+  }
+
   const total = lista.reduce((s, p) => s + Number(p.valor), 0);
-  const totalPago = lista.filter((p) => p.pago).reduce((s, p) => s + Number(p.valor), 0);
+  const totalPago = lista.reduce((s, p) => s + Number(p.total_pago), 0);
 
   const grupos = [...GRUPOS_DRE, ...GRUPOS_DFC_EXTRA].map((g) => ({
     rotulo: g.rotulo,
@@ -87,12 +101,13 @@ export default async function Pagamentos({
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-3 py-2 font-semibold">Dia</th>
+                  <th className="px-3 py-2 font-semibold">Venc.</th>
                   <th className="px-3 py-2 font-semibold">Cód.</th>
                   <th className="px-3 py-2 font-semibold">Descrição</th>
                   <th className="px-3 py-2 font-semibold">Forma</th>
                   <th className="px-3 py-2 font-semibold">Banco</th>
                   <th className="px-3 py-2 text-right font-semibold">Valor</th>
+                  <th className="px-3 py-2 text-right font-semibold">Saldo</th>
                   <th className="px-3 py-2 font-semibold">Situação</th>
                   <th className="px-3 py-2"></th>
                 </tr>
@@ -100,7 +115,7 @@ export default async function Pagamentos({
               <tbody className="divide-y divide-slate-100">
                 {lista.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-3 py-2 tabular-nums">{p.data.slice(8, 10)}</td>
+                    <td className="whitespace-nowrap px-3 py-2 tabular-nums">{p.vencimento.slice(8, 10)}</td>
                     <td className="whitespace-nowrap px-3 py-2">
                       <span className="font-medium">{p.cd}</span>{" "}
                       <span className="text-slate-500">{nomeCodigo.get(p.cd)}</span>
@@ -111,7 +126,19 @@ export default async function Pagamentos({
                       {p.banco_id ? nomeBanco.get(p.banco_id) : "—"}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums">{brl(Number(p.valor))}</td>
-                    <td className="px-3 py-2"><InterruptorPago id={p.id} pago={p.pago} /></td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums text-slate-500">
+                      {Number(p.saldo) > 0.009 ? brl(Number(p.saldo)) : "—"}
+                    </td>
+                    <td className="px-3 py-2">
+                      <Baixa
+                        pagamentoId={p.id}
+                        valor={Number(p.valor)}
+                        totalPago={Number(p.total_pago)}
+                        baixas={baixasPor.get(p.id) ?? []}
+                        formas={(formasRes.data ?? []).filter((f) => f.nome !== "")}
+                        bancos={bancosRes.data ?? []}
+                      />
+                    </td>
                     <td className="px-3 py-2 text-right"><BotaoExcluir tabela="pagamentos" id={p.id} /></td>
                   </tr>
                 ))}

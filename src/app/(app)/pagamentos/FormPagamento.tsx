@@ -28,6 +28,7 @@ export default function FormPagamento({
   const ref = useRef<HTMLFormElement>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [jaPago, setJaPago] = useState(false);
   const hoje = `${ano}-${String(mes).padStart(2, "0")}-${String(new Date().getDate()).padStart(2, "0")}`;
 
   return (
@@ -38,8 +39,10 @@ export default function FormPagamento({
         setSalvando(true);
         const r = await salvarPagamento(fd);
         setSalvando(false);
-        if (r.ok) ref.current?.reset();
-        else setErro(r.erro ?? "Não foi possível salvar.");
+        if (r.ok) {
+          ref.current?.reset();
+          setJaPago(false);
+        } else setErro(r.erro ?? "Não foi possível salvar.");
       }}
       className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-12"
     >
@@ -47,8 +50,8 @@ export default function FormPagamento({
       <input type="hidden" name="comp_mes" value={mes} />
       <input type="hidden" name="comp_ano" value={ano} />
 
-      <Campo rotulo="Data" className="xl:col-span-1">
-        <input type="date" name="data" required defaultValue={hoje} className={inputCls} />
+      <Campo rotulo="Vencimento" className="xl:col-span-1">
+        <input type="date" name="vencimento" required defaultValue={hoje} className={inputCls} />
       </Campo>
 
       <Campo rotulo="CFC" className="xl:col-span-1">
@@ -113,11 +116,25 @@ export default function FormPagamento({
         </select>
       </Campo>
 
-      <div className="col-span-2 flex items-end gap-3 xl:col-span-12">
+      <div className="col-span-2 flex flex-wrap items-end gap-3 xl:col-span-12">
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="pago" className="h-4 w-4 rounded border-slate-300" />
+          <input
+            type="checkbox"
+            name="ja_pago"
+            checked={jaPago}
+            onChange={(e) => setJaPago(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300"
+          />
           Já foi pago
         </label>
+
+        {jaPago && (
+          <label className="flex items-center gap-2 text-sm">
+            <span className="text-slate-500">Pago em</span>
+            <input type="date" name="data_pagamento" defaultValue={hoje} className={`${inputCls} w-auto`} />
+          </label>
+        )}
+
         <span className="text-xs text-slate-400">
           Competência: {MESES[mes - 1]}/{ano} — muda no seletor acima se a conta for de outro mês.
         </span>
