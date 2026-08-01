@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { buscarDetalhes } from "@/lib/acoes";
-import type { LinhaDetalhe } from "@/lib/relatorios";
+import type { LinhaDetalhe, FiltroRelatorio } from "@/lib/relatorios";
 import { brl, MESES } from "@/lib/formato";
 import { inputCls } from "@/components/ui";
 
@@ -23,6 +23,7 @@ export default function DetalheCodigo({
   mes,
   regime,
   lojaId,
+  filtro,
 }: {
   empresaId: string;
   codigo: number;
@@ -32,6 +33,7 @@ export default function DetalheCodigo({
   mes: number;
   regime: "competencia" | "caixa";
   lojaId: string | null;
+  filtro: FiltroRelatorio;
 }) {
   const [aberto, setAberto] = useState(false);
   const [linhas, setLinhas] = useState<LinhaDetalhe[] | null>(null);
@@ -43,11 +45,11 @@ export default function DetalheCodigo({
   useEffect(() => {
     if (!aberto || linhas !== null) return;
     let cancelado = false;
-    buscarDetalhes(empresaId, codigo, ano, mes, regime, lojaId)
+    buscarDetalhes(empresaId, codigo, ano, mes, regime, lojaId, filtro)
       .then((r) => { if (!cancelado) setLinhas(r); })
       .catch(() => { if (!cancelado) setErro("Não foi possível carregar os lançamentos."); });
     return () => { cancelado = true; };
-  }, [aberto, linhas, empresaId, codigo, ano, mes, regime, lojaId]);
+  }, [aberto, linhas, empresaId, codigo, ano, mes, regime, lojaId, filtro]);
 
   // Fecha no Esc, como qualquer janela.
   useEffect(() => {

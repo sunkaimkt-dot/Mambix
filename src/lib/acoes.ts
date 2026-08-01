@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase-server";
-import { detalhesCodigo, type LinhaDetalhe } from "@/lib/relatorios";
+import { detalhesCodigo, type LinhaDetalhe, type FiltroRelatorio } from "@/lib/relatorios";
 
 export type Resultado = { ok: boolean; erro?: string };
 
@@ -16,9 +16,10 @@ export async function buscarDetalhes(
   ano: number,
   mes: number,
   regime: "competencia" | "caixa",
-  lojaId: string | null
+  lojaId: string | null,
+  filtro: FiltroRelatorio = {}
 ): Promise<LinhaDetalhe[]> {
-  return detalhesCodigo(empresaId, codigo, ano, mes, regime, lojaId);
+  return detalhesCodigo(empresaId, codigo, ano, mes, regime, lojaId, filtro);
 }
 
 function texto(fd: FormData, k: string) {

@@ -1,6 +1,8 @@
 import { carregarContexto } from "@/lib/contexto";
-import { dadosDFC } from "@/lib/relatorios";
+import { supabaseServer } from "@/lib/supabase-server";
+import { dadosDFC, lerFiltro } from "@/lib/relatorios";
 import Cabecalho from "@/components/Cabecalho";
+import FiltroRelatorio from "@/components/FiltroRelatorio";
 import TabelaCodigos from "@/components/TabelaCodigos";
 import { Cartao } from "@/components/ui";
 import { brl, MESES, CFC } from "@/lib/formato";
@@ -14,7 +16,16 @@ export default async function DFC({
   const ctx = await carregarContexto(sp);
   if (!ctx) return <main className="p-6"><p className="text-sm text-slate-500">Cadastre uma empresa primeiro.</p></main>;
 
-  const d = await dadosDFC(ctx.empresaId, ctx.ano, ctx.mes, ctx.lojaId);
+  const filtro = lerFiltro(sp);
+  const d = await dadosDFC(ctx.empresaId, ctx.ano, ctx.mes, ctx.lojaId, filtro);
+
+  const supabase = await supabaseServer();
+  const { data: formasRes } = await supabase
+    .from("formas_pagamento")
+    .select("codigo, nome")
+    .eq("empresa_id", ctx.empresaId)
+    .order("codigo");
+  const formas = (formasRes ?? []).filter((f) => f.nome !== "");
   const base = d.entradas;
 
   const qs = new URLSearchParams(
@@ -28,6 +39,8 @@ export default async function DFC({
         subtitulo={`${MESES[ctx.mes - 1]}/${ctx.ano} — regime de caixa (só o que entrou e saiu de fato)`}
         ctx={ctx}
       />
+
+      <FiltroRelatorio formas={formas} regime="caixa" />
 
       <div className="mb-6 grid gap-6 lg:grid-cols-2">
         <Cartao className="p-4">
@@ -108,6 +121,7 @@ export default async function DFC({
           ano={ctx.ano}
           mes={ctx.mes}
           lojaId={ctx.lojaId}
+          filtro={filtro}
           qs={qs}
         />
       </Cartao>

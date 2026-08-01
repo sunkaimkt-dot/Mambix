@@ -5,8 +5,56 @@ import { GRUPOS_DRE, GRUPOS_DFC_EXTRA, brl } from "@/lib/formato";
 export type LinhaCodigo = { codigo: number; nome: string; valor: number };
 export type Grupo = { chave: string; rotulo: string; de: number; ate: number; total: number };
 
+/**
+ * Filtro do relatorio inteiro -- o equivalente ao filtro da planilha.
+ * Afeta apenas as DESPESAS. Faturamento e entradas continuam cheios, porque
+ * filtrar venda por "descricao da despesa" nao faz sentido; a tela avisa isso.
+ */
+export type FiltroRelatorio = {
+  texto?: string;
+  min?: number;
+  max?: number;
+  cp?: number;
+  situacao?: "pagos" | "abertos";
+};
+
+export function filtroVazio(f: FiltroRelatorio) {
+  return (
+    !f.texto?.trim() &&
+    f.min === undefined &&
+    f.max === undefined &&
+    f.cp === undefined &&
+    !f.situacao
+  );
+}
+
+/** Le o filtro a partir dos parametros da URL. */
+export function lerFiltro(sp: Record<string, string | string[] | undefined>): FiltroRelatorio {
+  const txt = (k: string) => (typeof sp[k] === "string" && sp[k] !== "" ? (sp[k] as string) : undefined);
+  const nmr = (k: string) => {
+    const v = txt(k);
+    if (v === undefined) return undefined;
+    const n = Number(v.replace(",", "."));
+    return Number.isNaN(n) ? undefined : n;
+  };
+  const sit = txt("situacao");
+  return {
+    texto: txt("q"),
+    min: nmr("min"),
+    max: nmr("max"),
+    cp: nmr("cp"),
+    situacao: sit === "pagos" || sit === "abertos" ? sit : undefined,
+  };
+}
+
 /** DRE = regime de competencia: pagamentos cujo comp_mes/comp_ano batem, pagos ou nao. */
-export async function dadosDRE(empresaId: string, ano: number, mes: number, lojaId: string | null) {
+export async function dadosDRE(
+  empresaId: string,
+  ano: number,
+  mes: number,
+  lojaId: string | null,
+  filtro: FiltroRelatorio = {}
+) {
   const supabase = await supabaseServer();
 
   let q = supabase
@@ -16,6 +64,11 @@ export async function dadosDRE(empresaId: string, ano: number, mes: number, loja
     .eq("comp_ano", ano)
     .eq("comp_mes", mes);
   if (lojaId) q = q.eq("loja_id", lojaId);
+  if (filtro.texto?.trim()) q = q.ilike("descricao", `%${filtro.texto.trim()}%`);
+  if (filtro.min !== undefined) q = q.gte("valor", filtro.min);
+  if (filtro.max !== undefined) q = q.lte("valor", filtro.max);
+  if (filtro.cp !== undefined) q = q.eq("cp", filtro.cp);
+  if (filtro.situacao) q = q.eq("pago", filtro.situacao === "pagos");
 
   let qv = supabase
     .from("caixa_diario")
@@ -71,17 +124,29 @@ export async function dadosDRE(empresaId: string, ano: number, mes: number, loja
  * o dia em que o dinheiro saiu, que pode ser de mes diferente do vencimento.
  * Um aluguel que venceu em junho e foi pago em julho aparece no DFC de julho.
  */
-export async function dadosDFC(empresaId: string, ano: number, mes: number, lojaId: string | null) {
+export async function dadosDFC(
+  empresaId: string,
+  ano: number,
+  mes: number,
+  lojaId: string | null,
+  filtro: FiltroRelatorio = {}
+) {
   const supabase = await supabaseServer();
   const ini = primeiroDia(ano, mes);
   const fim = ultimoDia(ano, mes);
 
-  const q = supabase
+  let q = supabase
     .from("pagamento_baixas")
-    .select("valor, pagamentos!inner(cd, cfc, loja_id)")
+    .select("valor, pagamentos!inner(cd, cfc, loja_id, descricao)")
     .eq("empresa_id", empresaId)
     .gte("data_pagamento", ini)
     .lte("data_pagamento", fim);
+  // No caixa o valor filtrado e o da BAIXA, nao o da conta: se ele procura
+  // pagamentos acima de 500, quer os que sairam acima de 500.
+  if (filtro.texto?.trim()) q = q.ilike("pagamentos.descricao", `%${filtro.texto.trim()}%`);
+  if (filtro.min !== undefined) q = q.gte("valor", filtro.min);
+  if (filtro.max !== undefined) q = q.lte("valor", filtro.max);
+  if (filtro.cp !== undefined) q = q.eq("cp", filtro.cp);
 
   const [baixaRes, recRes, codigosRes, tiposRes] = await Promise.all([
     q,
@@ -151,7 +216,8 @@ export async function detalhesCodigo(
   ano: number,
   mes: number,
   regime: "competencia" | "caixa",
-  lojaId: string | null
+  lojaId: string | null,
+  filtro: FiltroRelatorio = {}
 ): Promise<LinhaDetalhe[]> {
   const supabase = await supabaseServer();
   const ini = primeiroDia(ano, mes);
@@ -176,6 +242,13 @@ export async function detalhesCodigo(
       .eq("comp_mes", mes)
       .order("vencimento");
     if (lojaId) q = q.eq("loja_id", lojaId);
+    // O detalhe herda o filtro do relatorio: se a tela esta filtrada, a soma do
+    // modal tem que continuar batendo com o numero que ele clicou.
+    if (filtro.texto?.trim()) q = q.ilike("descricao", `%${filtro.texto.trim()}%`);
+    if (filtro.min !== undefined) q = q.gte("valor", filtro.min);
+    if (filtro.max !== undefined) q = q.lte("valor", filtro.max);
+    if (filtro.cp !== undefined) q = q.eq("cp", filtro.cp);
+    if (filtro.situacao) q = q.eq("pago", filtro.situacao === "pagos");
     const { data } = await q;
 
     return (data ?? []).map((p) => ({
@@ -194,7 +267,7 @@ export async function detalhesCodigo(
     }));
   }
 
-  const { data } = await supabase
+  let qb = supabase
     .from("pagamento_baixas")
     .select("id, data_pagamento, valor, cp, banco_id, pagamentos!inner(cd, descricao, loja_id)")
     .eq("empresa_id", empresaId)
@@ -202,6 +275,11 @@ export async function detalhesCodigo(
     .gte("data_pagamento", ini)
     .lte("data_pagamento", fim)
     .order("data_pagamento");
+  if (filtro.texto?.trim()) qb = qb.ilike("pagamentos.descricao", `%${filtro.texto.trim()}%`);
+  if (filtro.min !== undefined) qb = qb.gte("valor", filtro.min);
+  if (filtro.max !== undefined) qb = qb.lte("valor", filtro.max);
+  if (filtro.cp !== undefined) qb = qb.eq("cp", filtro.cp);
+  const { data } = await qb;
 
   type Linha = {
     id: string;

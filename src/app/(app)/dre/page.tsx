@@ -1,6 +1,8 @@
 import { carregarContexto } from "@/lib/contexto";
-import { dadosDRE } from "@/lib/relatorios";
+import { supabaseServer } from "@/lib/supabase-server";
+import { dadosDRE, lerFiltro } from "@/lib/relatorios";
 import Cabecalho from "@/components/Cabecalho";
+import FiltroRelatorio from "@/components/FiltroRelatorio";
 import TabelaCodigos from "@/components/TabelaCodigos";
 import { Cartao } from "@/components/ui";
 import { brl, pct, MESES } from "@/lib/formato";
@@ -15,7 +17,16 @@ export default async function DRE({
   const ctx = await carregarContexto(sp);
   if (!ctx) return <main className="p-6"><p className="text-sm text-slate-500">Cadastre uma empresa primeiro.</p></main>;
 
-  const d = await dadosDRE(ctx.empresaId, ctx.ano, ctx.mes, ctx.lojaId);
+  const filtro = lerFiltro(sp);
+  const d = await dadosDRE(ctx.empresaId, ctx.ano, ctx.mes, ctx.lojaId, filtro);
+
+  const supabase = await supabaseServer();
+  const { data: formasRes } = await supabase
+    .from("formas_pagamento")
+    .select("codigo, nome")
+    .eq("empresa_id", ctx.empresaId)
+    .order("codigo");
+  const formas = (formasRes ?? []).filter((f) => f.nome !== "");
   const base = d.faturamento;
 
   const qs = new URLSearchParams(
@@ -29,6 +40,8 @@ export default async function DRE({
         subtitulo={`${MESES[ctx.mes - 1]}/${ctx.ano} — regime de competência (o que pertence ao mês, pago ou não)`}
         ctx={ctx}
       />
+
+      <FiltroRelatorio formas={formas} regime="competencia" />
 
       {d.margem === 0 && (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
@@ -115,6 +128,7 @@ export default async function DRE({
           ano={ctx.ano}
           mes={ctx.mes}
           lojaId={ctx.lojaId}
+          filtro={filtro}
           qs={qs}
         />
       </Cartao>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { brl, pct } from "@/lib/formato";
-import type { LinhaCodigo } from "@/lib/relatorios";
+import type { LinhaCodigo, FiltroRelatorio } from "@/lib/relatorios";
 import DetalheCodigo from "@/components/DetalheCodigo";
 
 /**
@@ -19,6 +19,7 @@ export default function TabelaCodigos({
   ano,
   mes,
   lojaId,
+  filtro,
   qs = "",
 }: {
   linhas: LinhaCodigo[];
@@ -29,6 +30,7 @@ export default function TabelaCodigos({
   ano: number;
   mes: number;
   lojaId: string | null;
+  filtro: FiltroRelatorio;
   qs?: string;
 }) {
   const metade = Math.ceil(linhas.length / 2);
@@ -86,6 +88,7 @@ export default function TabelaCodigos({
                         mes={mes}
                         regime={regime}
                         lojaId={lojaId}
+                        filtro={filtro}
                       />
                     ) : null}
                   </td>
