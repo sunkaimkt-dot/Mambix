@@ -111,6 +111,10 @@ export default async function DRE({
           base={base}
           titulo="Detalhamento por código (1 a 100)"
           regime="competencia"
+          empresaId={ctx.empresaId}
+          ano={ctx.ano}
+          mes={ctx.mes}
+          lojaId={ctx.lojaId}
           qs={qs}
         />
       </Cartao>

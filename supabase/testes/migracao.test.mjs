@@ -220,7 +220,67 @@ checa("Série anual por caixa do código 31: nada em jun, 5000 em jul",
   serieCaixa[6] === undefined && serieCaixa[7] === 5000, JSON.stringify(serieCaixa));
 
 // =====================================================================
-titulo("FASE 7 — casos de borda");
+titulo("FASE 7 — composição do total (o detalhamento tem que fechar)");
+
+// O cliente vai abrir o codigo e somar as linhas na mao. Se nao bater com o
+// total do relatorio, ele perde a confianca no sistema inteiro.
+// Cenario: tres manutencoes diferentes no mesmo codigo, no mesmo mes.
+await como(uConsultor, `insert into pagamentos (empresa_id, loja_id, vencimento, cfc, cd, descricao, comp_mes, comp_ano, valor) values
+  ('${emp}','${loja}','2026-09-05',1,47,'Manutenção do freezer', 9,2026,1200),
+  ('${emp}','${loja}','2026-09-12',1,47,'Manutenção elétrica',   9,2026, 800),
+  ('${emp}','${loja}','2026-09-20',1,47,'Manutenção do ar',      9,2026, 450)`);
+
+r = await db.query(`select coalesce(sum(valor),0) t from pagamentos
+  where empresa_id='${emp}' and cd=47 and comp_ano=2026 and comp_mes=9`);
+const totalDRE = Number(r.rows[0].t);
+checa("Total do código 47 na DRE de setembro é 2450", totalDRE === 2450, `deu ${totalDRE}`);
+
+r = await db.query(`select descricao, valor from pagamentos
+  where empresa_id='${emp}' and cd=47 and comp_ano=2026 and comp_mes=9 order by vencimento`);
+checa("Detalhamento por competência lista as 3 manutenções", r.rows.length === 3, `listou ${r.rows.length}`);
+checa("E a soma do detalhe fecha com o total",
+  r.rows.reduce((s, x) => s + Number(x.valor), 0) === totalDRE, "não fechou");
+
+// No caixa a leitura muda: paga uma inteira e outra pela metade.
+const freezer = (await db.query(`select id from pagamentos
+  where empresa_id='${emp}' and descricao='Manutenção do freezer'`)).rows[0].id;
+const eletrica = (await db.query(`select id from pagamentos
+  where empresa_id='${emp}' and descricao='Manutenção elétrica'`)).rows[0].id;
+
+await como(uConsultor, `insert into pagamento_baixas (empresa_id,pagamento_id,data_pagamento,valor) values
+  ('${emp}','${freezer}','2026-09-06',1200),
+  ('${emp}','${eletrica}','2026-09-15',300),
+  ('${emp}','${eletrica}','2026-10-02',500)`);
+
+r = await db.query(`select coalesce(sum(b.valor),0) t
+  from pagamento_baixas b join pagamentos p on p.id=b.pagamento_id
+  where b.empresa_id='${emp}' and p.cd=47
+    and b.data_pagamento between '2026-09-01' and '2026-09-30'`);
+const totalDFC = Number(r.rows[0].t);
+checa("Total do código 47 no DFC de setembro é 1500 (1200 + parcial de 300)",
+  totalDFC === 1500, `deu ${totalDFC}`);
+
+r = await db.query(`select b.valor, p.descricao
+  from pagamento_baixas b join pagamentos p on p.id=b.pagamento_id
+  where b.empresa_id='${emp}' and p.cd=47
+    and b.data_pagamento between '2026-09-01' and '2026-09-30' order by b.data_pagamento`);
+checa("Detalhamento por caixa lista 2 pagamentos (não 3 lançamentos)",
+  r.rows.length === 2, `listou ${r.rows.length}`);
+checa("E a soma do detalhe fecha com o total do DFC",
+  r.rows.reduce((s, x) => s + Number(x.valor), 0) === totalDFC, "não fechou");
+
+r = await db.query(`select coalesce(sum(b.valor),0) t
+  from pagamento_baixas b join pagamentos p on p.id=b.pagamento_id
+  where b.empresa_id='${emp}' and p.cd=47
+    and b.data_pagamento between '2026-10-01' and '2026-10-31'`);
+checa("A outra metade da elétrica aparece só em outubro", Number(r.rows[0].t) === 500, `deu ${r.rows[0].t}`);
+
+r = await db.query(`select coalesce(sum(valor),0) t from pagamentos
+  where empresa_id='${emp}' and cd=47 and comp_ano=2026 and comp_mes=10`);
+checa("E a DRE de outubro continua zerada para esse código", Number(r.rows[0].t) === 0, `deu ${r.rows[0].t}`);
+
+// =====================================================================
+titulo("FASE 8 — casos de borda");
 
 // estorno de parcial
 const luzJul = (await db.query(
@@ -272,7 +332,7 @@ r = await como(uConvidado, `select aceitar_convite('nao-existe') as r`);
 checa("Token inexistente é recusado", r.rows[0].r.ok === false);
 
 // =====================================================================
-titulo("FASE 8 — isolamento nas baixas (dado financeiro entre carteiras)");
+titulo("FASE 9 — isolamento nas baixas (dado financeiro entre carteiras)");
 
 const gB = (await db.query(`insert into gestores (nome) values ('Gestor Rival') returning id`)).rows[0].id;
 const uGestorB = (await db.query(

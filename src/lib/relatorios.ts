@@ -1,6 +1,6 @@
 import { supabaseServer } from "@/lib/supabase-server";
 import { primeiroDia, ultimoDia } from "@/lib/contexto";
-import { GRUPOS_DRE, GRUPOS_DFC_EXTRA } from "@/lib/formato";
+import { GRUPOS_DRE, GRUPOS_DFC_EXTRA, brl } from "@/lib/formato";
 
 export type LinhaCodigo = { codigo: number; nome: string; valor: number };
 export type Grupo = { chave: string; rotulo: string; de: number; ate: number; total: number };
@@ -123,6 +123,107 @@ export async function dadosDFC(empresaId: string, ano: number, mes: number, loja
   const saidas = pagamentos.reduce((s, p) => s + Number(p.valor), 0);
 
   return { porCodigo, grupos, porTipoRecebimento, porCFC, entradas, saidas, resultado: entradas - saidas };
+}
+
+export type LinhaDetalhe = {
+  id: string;
+  data: string;
+  descricao: string;
+  valor: number;
+  loja: string | null;
+  forma: string | null;
+  banco: string | null;
+  situacao: string | null;
+};
+
+/**
+ * Lancamentos que formaram o total de um codigo no mes.
+ *
+ * O regime importa e nao e detalhe: na DRE lista os PAGAMENTOS por competencia
+ * (uma conta de 1.000 aparece uma linha de 1.000, paga ou nao); no DFC lista as
+ * BAIXAS (a mesma conta paga em duas parcelas vira duas linhas, em meses
+ * diferentes). Se misturasse, a soma do detalhe nao bateria com o total que o
+ * usuario clicou -- e e justamente essa conferencia que ele quer fazer.
+ */
+export async function detalhesCodigo(
+  empresaId: string,
+  codigo: number,
+  ano: number,
+  mes: number,
+  regime: "competencia" | "caixa",
+  lojaId: string | null
+): Promise<LinhaDetalhe[]> {
+  const supabase = await supabaseServer();
+  const ini = primeiroDia(ano, mes);
+  const fim = ultimoDia(ano, mes);
+
+  const [formasRes, bancosRes, lojasRes] = await Promise.all([
+    supabase.from("formas_pagamento").select("codigo, nome").eq("empresa_id", empresaId),
+    supabase.from("bancos").select("id, nome").eq("empresa_id", empresaId),
+    supabase.from("lojas").select("id, nome").eq("empresa_id", empresaId),
+  ]);
+  const nomeForma = new Map((formasRes.data ?? []).map((f) => [f.codigo, f.nome]));
+  const nomeBanco = new Map((bancosRes.data ?? []).map((b) => [b.id, b.nome]));
+  const nomeLoja = new Map((lojasRes.data ?? []).map((l) => [l.id, l.nome]));
+
+  if (regime === "competencia") {
+    let q = supabase
+      .from("pagamentos_saldo")
+      .select("id, vencimento, descricao, valor, saldo, pago, cp, banco_id, loja_id")
+      .eq("empresa_id", empresaId)
+      .eq("cd", codigo)
+      .eq("comp_ano", ano)
+      .eq("comp_mes", mes)
+      .order("vencimento");
+    if (lojaId) q = q.eq("loja_id", lojaId);
+    const { data } = await q;
+
+    return (data ?? []).map((p) => ({
+      id: p.id,
+      data: p.vencimento,
+      descricao: p.descricao || "(sem descrição)",
+      valor: Number(p.valor),
+      loja: p.loja_id ? nomeLoja.get(p.loja_id) ?? null : null,
+      forma: p.cp ? nomeForma.get(p.cp) ?? null : null,
+      banco: p.banco_id ? nomeBanco.get(p.banco_id) ?? null : null,
+      situacao: p.pago
+        ? "Pago"
+        : Number(p.saldo) < Number(p.valor)
+          ? `Parcial · falta ${brl(Number(p.saldo))}`
+          : "Em aberto",
+    }));
+  }
+
+  const { data } = await supabase
+    .from("pagamento_baixas")
+    .select("id, data_pagamento, valor, cp, banco_id, pagamentos!inner(cd, descricao, loja_id)")
+    .eq("empresa_id", empresaId)
+    .eq("pagamentos.cd", codigo)
+    .gte("data_pagamento", ini)
+    .lte("data_pagamento", fim)
+    .order("data_pagamento");
+
+  type Linha = {
+    id: string;
+    data_pagamento: string;
+    valor: number;
+    cp: number | null;
+    banco_id: string | null;
+    pagamentos: { descricao: string; loja_id: string | null } | null;
+  };
+
+  return ((data ?? []) as unknown as Linha[])
+    .filter((b) => !lojaId || b.pagamentos?.loja_id === lojaId)
+    .map((b) => ({
+      id: b.id,
+      data: b.data_pagamento,
+      descricao: b.pagamentos?.descricao || "(sem descrição)",
+      valor: Number(b.valor),
+      loja: b.pagamentos?.loja_id ? nomeLoja.get(b.pagamentos.loja_id) ?? null : null,
+      forma: b.cp ? nomeForma.get(b.cp) ?? null : null,
+      banco: b.banco_id ? nomeBanco.get(b.banco_id) ?? null : null,
+      situacao: null,
+    }));
 }
 
 export type SerieAnual = {

@@ -104,6 +104,10 @@ export default async function DFC({
           base={base}
           titulo="Detalhamento por código (1 a 100)"
           regime="caixa"
+          empresaId={ctx.empresaId}
+          ano={ctx.ano}
+          mes={ctx.mes}
+          lojaId={ctx.lojaId}
           qs={qs}
         />
       </Cartao>

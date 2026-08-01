@@ -1,8 +1,25 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase-server";
+import { detalhesCodigo, type LinhaDetalhe } from "@/lib/relatorios";
 
 export type Resultado = { ok: boolean; erro?: string };
+
+/**
+ * Busca a composicao de um codigo sob demanda, quando o usuario abre o modal.
+ * Carregar isso junto com o relatorio significaria trazer os lancamentos dos 100
+ * codigos de uma vez, para o caso de ele abrir um.
+ */
+export async function buscarDetalhes(
+  empresaId: string,
+  codigo: number,
+  ano: number,
+  mes: number,
+  regime: "competencia" | "caixa",
+  lojaId: string | null
+): Promise<LinhaDetalhe[]> {
+  return detalhesCodigo(empresaId, codigo, ano, mes, regime, lojaId);
+}
 
 function texto(fd: FormData, k: string) {
   const v = fd.get(k);
