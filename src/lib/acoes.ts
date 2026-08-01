@@ -227,7 +227,14 @@ export async function salvarCliente(fd: FormData): Promise<Resultado> {
   if (!nome) return { ok: false, erro: "Informe o nome do cliente." };
 
   const supabase = await supabaseServer();
-  const { data: perfil } = await supabase.from("perfis").select("gestor_id, papel").maybeSingle();
+  // Sem o filtro por user_id, a plataforma (que le todos os perfis) recebe
+  // varias linhas e o maybeSingle falha.
+  const { data: sessao } = await supabase.auth.getUser();
+  const { data: perfil } = await supabase
+    .from("perfis")
+    .select("gestor_id, papel")
+    .eq("user_id", sessao.user?.id ?? "")
+    .maybeSingle();
 
   // A plataforma escolhe a carteira; o gestor so cria dentro da propria.
   const gestorId = perfil?.papel === "plataforma" ? texto(fd, "gestor_id") : perfil?.gestor_id;

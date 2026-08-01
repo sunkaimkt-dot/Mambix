@@ -28,6 +28,7 @@ export default async function Carteira() {
   const supabase = await supabaseServer();
   const h = await headers();
   const baseUrl = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? ""}`;
+  const { data: sessao } = await supabase.auth.getUser();
 
   const [clientesRes, empresasRes, convitesRes, gestoresRes, perfilRes] = await Promise.all([
     supabase.from("clientes").select("id, nome, gestor_id").order("nome"),
@@ -40,7 +41,8 @@ export default async function Carteira() {
     papel === "plataforma"
       ? supabase.from("gestores").select("id, nome").order("nome")
       : Promise.resolve({ data: [] as { id: string; nome: string }[] }),
-    supabase.from("perfis").select("gestor_id").maybeSingle(),
+    // Filtrar por user_id e obrigatorio: a plataforma le todos os perfis.
+    supabase.from("perfis").select("gestor_id").eq("user_id", sessao.user?.id ?? "").maybeSingle(),
   ]);
 
   const clientes = clientesRes.data ?? [];

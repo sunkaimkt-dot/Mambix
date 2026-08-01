@@ -13,10 +13,24 @@ export type Contexto = {
   papel: Papel;
 };
 
-/** Papel do usuario logado. Define o que aparece na navegacao. */
+/**
+ * Papel do usuario logado.
+ *
+ * O filtro por user_id NAO e opcional: quem tem papel 'plataforma' enxerga todos
+ * os perfis, entao sem ele o maybeSingle() recebe varias linhas, falha, e a
+ * funcao devolvia 'empresario' -- justamente para quem tem mais acesso.
+ */
 export async function meuPapel(): Promise<Papel> {
   const supabase = await supabaseServer();
-  const { data } = await supabase.from("perfis").select("papel").maybeSingle();
+  const { data: sessao } = await supabase.auth.getUser();
+  if (!sessao.user) return "empresario";
+
+  const { data } = await supabase
+    .from("perfis")
+    .select("papel")
+    .eq("user_id", sessao.user.id)
+    .maybeSingle();
+
   return (data?.papel as Papel) ?? "empresario";
 }
 
