@@ -1,15 +1,51 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { salvarCliente, salvarEmpresa, criarConvite, revogarConvite } from "@/lib/acoes";
+import { salvarGestor, salvarCliente, salvarEmpresa, criarConvite, revogarConvite } from "@/lib/acoes";
 import { inputCls } from "@/components/ui";
 
-type Cliente = { id: string; nome: string };
+type Item = { id: string; nome: string };
 
-export function FormCliente({ gestorId }: { gestorId: string | null }) {
+/** Cadastro de gestor financeiro. Só a plataforma vê este formulário. */
+export function FormGestor() {
   const router = useRouter();
   const ref = useRef<HTMLFormElement>(null);
   const [erro, setErro] = useState<string | null>(null);
+
+  return (
+    <form
+      ref={ref}
+      action={async (fd) => {
+        setErro(null);
+        const r = await salvarGestor(fd);
+        if (r.ok) { ref.current?.reset(); router.refresh(); }
+        else setErro(r.erro ?? "Não foi possível salvar.");
+      }}
+      className="flex flex-wrap items-end gap-2"
+    >
+      <input name="nome" required placeholder="Nome do gestor financeiro" className={`${inputCls} max-w-xs`} />
+      <button className="rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700">
+        Adicionar gestor
+      </button>
+      <span className="text-xs text-slate-400">
+        Depois gere um convite para dar acesso a ele.
+      </span>
+      {erro && <span className="text-sm text-red-600">{erro}</span>}
+    </form>
+  );
+}
+
+export function FormCliente({ gestorId, gestores }: { gestorId: string | null; gestores: Item[] }) {
+  const router = useRouter();
+  const ref = useRef<HTMLFormElement>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  // A plataforma precisa dizer de qual carteira é o cliente; o gestor não,
+  // porque só existe uma carteira possível para ele.
+  const escolheCarteira = gestorId === null;
+  if (escolheCarteira && gestores.length === 0) {
+    return <p className="text-sm text-slate-500">Cadastre um gestor primeiro.</p>;
+  }
 
   return (
     <form
@@ -22,7 +58,16 @@ export function FormCliente({ gestorId }: { gestorId: string | null }) {
       }}
       className="flex flex-wrap items-end gap-2"
     >
-      {gestorId && <input type="hidden" name="gestor_id" value={gestorId} />}
+      {escolheCarteira ? (
+        <select name="gestor_id" required className={`${inputCls} max-w-xs`} defaultValue="">
+          <option value="" disabled>Carteira de…</option>
+          {gestores.map((g) => (
+            <option key={g.id} value={g.id}>{g.nome}</option>
+          ))}
+        </select>
+      ) : (
+        <input type="hidden" name="gestor_id" value={gestorId} />
+      )}
       <input name="nome" required placeholder="Nome do cliente" className={`${inputCls} max-w-xs`} />
       <button className="rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700">
         Adicionar cliente
@@ -32,7 +77,7 @@ export function FormCliente({ gestorId }: { gestorId: string | null }) {
   );
 }
 
-export function FormEmpresa({ clientes }: { clientes: Cliente[] }) {
+export function FormEmpresa({ clientes }: { clientes: Item[] }) {
   const router = useRouter();
   const ref = useRef<HTMLFormElement>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -66,16 +111,50 @@ export function FormEmpresa({ clientes }: { clientes: Cliente[] }) {
   );
 }
 
-export function FormConvite({ clientes, baseUrl }: { clientes: Cliente[]; baseUrl: string }) {
+/**
+ * Convite de acesso. A plataforma pode convidar gestor ou cliente final;
+ * o gestor só convida clientes da própria carteira.
+ */
+export function FormConvite({
+  clientes,
+  gestores,
+  podeConvidarGestor,
+  baseUrl,
+}: {
+  clientes: Item[];
+  gestores: Item[];
+  podeConvidarGestor: boolean;
+  baseUrl: string;
+}) {
+  const router = useRouter();
   const ref = useRef<HTMLFormElement>(null);
+  const [papel, setPapel] = useState<"empresario" | "gestor">("empresario");
   const [erro, setErro] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
 
-  if (clientes.length === 0) return null;
+  const paraGestor = papel === "gestor";
+  if (clientes.length === 0 && gestores.length === 0) return null;
 
   return (
     <div>
+      {podeConvidarGestor && (
+        <div className="mb-3 flex gap-1.5">
+          {(["empresario", "gestor"] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => { setPapel(p); setLink(null); setErro(null); }}
+              className={`rounded-lg px-3 py-1 text-sm ${
+                papel === p ? "bg-emerald-50 font-medium text-emerald-700" : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {p === "gestor" ? "Gestor financeiro" : "Cliente final"}
+            </button>
+          ))}
+        </div>
+      )}
+
       <form
         ref={ref}
         action={async (fd) => {
@@ -86,10 +165,12 @@ export function FormConvite({ clientes, baseUrl }: { clientes: Cliente[]; baseUr
           if (r.ok && r.token) {
             setLink(`${baseUrl}/convite/${r.token}`);
             ref.current?.reset();
+            router.refresh();
           } else setErro(r.erro ?? "Não foi possível criar o convite.");
         }}
         className="flex flex-wrap items-end gap-2"
       >
+        <input type="hidden" name="papel" value={papel} />
         <input
           name="email"
           type="email"
@@ -97,12 +178,23 @@ export function FormConvite({ clientes, baseUrl }: { clientes: Cliente[]; baseUr
           placeholder="e-mail de quem vai acessar"
           className={`${inputCls} max-w-xs`}
         />
-        <select name="cliente_id" required className={`${inputCls} max-w-xs`} defaultValue="">
-          <option value="" disabled>Cliente…</option>
-          {clientes.map((c) => (
-            <option key={c.id} value={c.id}>{c.nome}</option>
-          ))}
-        </select>
+
+        {paraGestor ? (
+          <select name="gestor_id" required className={`${inputCls} max-w-xs`} defaultValue="">
+            <option value="" disabled>Gestor…</option>
+            {gestores.map((g) => (
+              <option key={g.id} value={g.id}>{g.nome}</option>
+            ))}
+          </select>
+        ) : (
+          <select name="cliente_id" required className={`${inputCls} max-w-xs`} defaultValue="">
+            <option value="" disabled>Cliente…</option>
+            {clientes.map((c) => (
+              <option key={c.id} value={c.id}>{c.nome}</option>
+            ))}
+          </select>
+        )}
+
         <button className="rounded-lg bg-slate-800 px-4 py-1.5 text-sm font-semibold text-white hover:bg-slate-900">
           Gerar convite
         </button>
@@ -112,7 +204,7 @@ export function FormConvite({ clientes, baseUrl }: { clientes: Cliente[]; baseUr
       {link && (
         <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-emerald-800">
-            Convite criado — envie este link
+            Convite de {paraGestor ? "gestor" : "cliente"} criado — envie este link
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <code className="break-all rounded bg-white px-2 py-1 text-xs text-slate-700">{link}</code>

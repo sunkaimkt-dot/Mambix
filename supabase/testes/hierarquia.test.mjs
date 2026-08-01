@@ -167,6 +167,38 @@ checa("Convite recusa e-mail diferente do destinatario", res.rows[0].r.ok === fa
 r = await como(uGestorB, `select id from convites`);
 checa("Gestor B NAO ve convites do Gestor A", r.rows.length === 0, `viu ${r.rows.length}`);
 
+// Convite de GESTOR: cria o nivel 2 da hierarquia. So a plataforma pode emitir.
+const uNovoGestor = await novoUsuario("novo.gestor@teste.com");
+const gC = (await db.query(`insert into gestores (nome) values ('Gestor C') returning id`)).rows[0].id;
+
+checa("Gestor comum NAO consegue emitir convite de gestor",
+  (await tenta(uGestorA, `insert into convites (token,email,papel,gestor_id)
+    values ('tok-g1','novo.gestor@teste.com','gestor','${gC}')`)) !== null, "insercao passou");
+
+await como(uNeto, `insert into convites (token,email,papel,gestor_id,criado_por)
+  values ('tok-g2','novo.gestor@teste.com','gestor','${gC}','${uNeto}')`);
+res = await como(uNovoGestor, `select aceitar_convite('tok-g2') as r`);
+checa("Plataforma convida gestor e o convite e aceito", res.rows[0].r.ok === true, JSON.stringify(res.rows[0].r));
+
+r = await como(uNovoGestor, `select papel, gestor_id from perfis where user_id='${uNovoGestor}'`);
+checa("Convidado virou gestor da carteira certa",
+  r.rows[0].papel === "gestor" && r.rows[0].gestor_id === gC, JSON.stringify(r.rows[0]));
+
+r = await como(uNovoGestor, `select id from empresas`);
+checa("Gestor novo comeca sem enxergar empresa nenhuma", r.rows.length === 0, `viu ${r.rows.length}`);
+
+r = await como(uNovoGestor, `select id from gestores`);
+checa("Gestor novo so enxerga a propria carteira",
+  r.rows.length === 1 && r.rows[0].id === gC, `viu ${r.rows.length}`);
+
+// A constraint destino_coerente protege contra convite mal formado.
+checa("Banco recusa convite de gestor apontando para cliente",
+  (await tenta(uNeto, `insert into convites (token,email,papel,gestor_id,cliente_id)
+    values ('tok-g3','x@teste.com','gestor','${gC}','${cA}')`)) !== null, "aceitou");
+checa("Banco recusa convite de gestor sem gestor definido",
+  (await tenta(uNeto, `insert into convites (token,email,papel)
+    values ('tok-g4','x@teste.com','gestor')`)) !== null, "aceitou");
+
 // -------------------------------------------------- competencia x caixa
 console.log("\n\x1b[1mCOMPETENCIA x CAIXA (o caso do aluguel)\x1b[0m");
 const pag = (await como(uGestorA,

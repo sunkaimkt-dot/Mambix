@@ -222,6 +222,33 @@ export async function salvarCodigos(fd: FormData): Promise<Resultado> {
 // Carteira do gestor
 // ============================================================
 
+/**
+ * Cadastra um gestor financeiro (nivel 2 da hierarquia).
+ * Exclusivo da plataforma: e ela que vende o sistema para os gestores.
+ * O RLS ja barra qualquer outro papel, isto aqui so devolve mensagem decente.
+ */
+export async function salvarGestor(fd: FormData): Promise<Resultado> {
+  const nome = texto(fd, "nome");
+  if (!nome) return { ok: false, erro: "Informe o nome do gestor." };
+
+  const supabase = await supabaseServer();
+  const { data: sessao } = await supabase.auth.getUser();
+  const { data: perfil } = await supabase
+    .from("perfis")
+    .select("papel")
+    .eq("user_id", sessao.user?.id ?? "")
+    .maybeSingle();
+
+  if (perfil?.papel !== "plataforma") {
+    return { ok: false, erro: "Apenas a Leads de Sucesso pode cadastrar gestores." };
+  }
+
+  const { error } = await supabase.from("gestores").insert({ nome });
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/carteira");
+  return { ok: true };
+}
+
 export async function salvarCliente(fd: FormData): Promise<Resultado> {
   const nome = texto(fd, "nome");
   if (!nome) return { ok: false, erro: "Informe o nome do cliente." };
@@ -238,7 +265,15 @@ export async function salvarCliente(fd: FormData): Promise<Resultado> {
 
   // A plataforma escolhe a carteira; o gestor so cria dentro da propria.
   const gestorId = perfil?.papel === "plataforma" ? texto(fd, "gestor_id") : perfil?.gestor_id;
-  if (!gestorId) return { ok: false, erro: "Sua conta não está vinculada a nenhuma carteira." };
+  if (!gestorId) {
+    return {
+      ok: false,
+      erro:
+        perfil?.papel === "plataforma"
+          ? "Selecione de qual gestor é este cliente."
+          : "Sua conta não está vinculada a nenhuma carteira.",
+    };
+  }
 
   const { error } = await supabase.from("clientes").insert({ gestor_id: gestorId, nome });
   if (error) return { ok: false, erro: amigavel(error.message) };
@@ -260,11 +295,23 @@ export async function salvarEmpresa(fd: FormData): Promise<Resultado> {
   return { ok: true };
 }
 
+/**
+ * Gera o link de convite. E a unica porta de entrada na hierarquia -- quem se
+ * cadastra sem convite fica sem vinculo e nao enxerga nada.
+ *
+ * Convite de GESTOR aponta para um gestor e nao tem cliente; convite de CLIENTE
+ * FINAL aponta para um cliente. A constraint destino_coerente, no banco, recusa
+ * qualquer combinacao fora disso.
+ */
 export async function criarConvite(fd: FormData): Promise<{ ok: boolean; erro?: string; token?: string }> {
   const email = texto(fd, "email");
+  const papel = texto(fd, "papel") === "gestor" ? "gestor" : "empresario";
   const clienteId = texto(fd, "cliente_id");
+  const gestorId = texto(fd, "gestor_id");
+
   if (!email) return { ok: false, erro: "Informe o e-mail de quem vai receber o convite." };
-  if (!clienteId) return { ok: false, erro: "Selecione o cliente." };
+  if (papel === "gestor" && !gestorId) return { ok: false, erro: "Selecione o gestor." };
+  if (papel === "empresario" && !clienteId) return { ok: false, erro: "Selecione o cliente." };
 
   const token = crypto.randomUUID().replace(/-/g, "");
   const supabase = await supabaseServer();
@@ -273,8 +320,9 @@ export async function criarConvite(fd: FormData): Promise<{ ok: boolean; erro?: 
   const { error } = await supabase.from("convites").insert({
     token,
     email: email.toLowerCase(),
-    papel: "empresario",
-    cliente_id: clienteId,
+    papel,
+    gestor_id: papel === "gestor" ? gestorId : null,
+    cliente_id: papel === "gestor" ? null : clienteId,
     criado_por: sessao.user?.id ?? null,
   });
   if (error) return { ok: false, erro: amigavel(error.message) };
