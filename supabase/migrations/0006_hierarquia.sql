@@ -341,6 +341,18 @@ drop function if exists trg_vincula_demo();
 -- Perfil continua sendo criado no cadastro, porem sem vinculo nenhum:
 -- sem cliente e sem gestor, o usuario nao enxerga uma linha sequer.
 
+-- Apagar o trigger nao basta: os vinculos que ele ja criou continuam valendo.
+-- Todo mundo que se cadastrou ate hoje esta preso a Empresa Demonstração e
+-- continuaria enxergando ela depois da migration -- inclusive clientes finais de
+-- gestores diferentes, olhando a mesma base. Limpa-se o passivo aqui.
+-- A plataforma nao e afetada: ela ve tudo pelo papel, nao por vinculo.
+delete from empresa_usuarios eu
+using empresas e, perfis p
+where eu.empresa_id = e.id
+  and p.user_id = eu.user_id
+  and e.nome = 'Empresa Demonstração'
+  and p.papel <> 'plataforma';
+
 -- ============================================================
 -- 9. Aceitar convite
 -- ============================================================
