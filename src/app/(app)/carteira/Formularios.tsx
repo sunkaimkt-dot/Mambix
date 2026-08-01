@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { salvarCliente, salvarEmpresa, criarConvite, revogarConvite } from "@/lib/acoes";
 import { inputCls } from "@/components/ui";
@@ -6,6 +7,7 @@ import { inputCls } from "@/components/ui";
 type Cliente = { id: string; nome: string };
 
 export function FormCliente({ gestorId }: { gestorId: string | null }) {
+  const router = useRouter();
   const ref = useRef<HTMLFormElement>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -15,7 +17,7 @@ export function FormCliente({ gestorId }: { gestorId: string | null }) {
       action={async (fd) => {
         setErro(null);
         const r = await salvarCliente(fd);
-        if (r.ok) ref.current?.reset();
+        if (r.ok) { ref.current?.reset(); router.refresh(); }
         else setErro(r.erro ?? "Não foi possível salvar.");
       }}
       className="flex flex-wrap items-end gap-2"
@@ -31,6 +33,7 @@ export function FormCliente({ gestorId }: { gestorId: string | null }) {
 }
 
 export function FormEmpresa({ clientes }: { clientes: Cliente[] }) {
+  const router = useRouter();
   const ref = useRef<HTMLFormElement>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -42,7 +45,7 @@ export function FormEmpresa({ clientes }: { clientes: Cliente[] }) {
       action={async (fd) => {
         setErro(null);
         const r = await salvarEmpresa(fd);
-        if (r.ok) ref.current?.reset();
+        if (r.ok) { ref.current?.reset(); router.refresh(); }
         else setErro(r.erro ?? "Não foi possível salvar.");
       }}
       className="flex flex-wrap items-end gap-2"
@@ -134,6 +137,7 @@ export function FormConvite({ clientes, baseUrl }: { clientes: Cliente[]; baseUr
 }
 
 export function BotaoRevogar({ id }: { id: string }) {
+  const router = useRouter();
   const [indo, setIndo] = useState(false);
   return (
     <button
@@ -143,6 +147,7 @@ export function BotaoRevogar({ id }: { id: string }) {
         setIndo(true);
         await revogarConvite(id);
         setIndo(false);
+        router.refresh();
       }}
       className="text-[11px] font-medium text-red-600 hover:underline disabled:opacity-50"
     >

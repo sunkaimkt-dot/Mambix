@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { registrarBaixa, estornarBaixa } from "@/lib/acoes";
 import { brl } from "@/lib/formato";
@@ -32,9 +33,15 @@ export default function Baixa({
   formas: { codigo: number; nome: string }[];
   bancos: { id: string; nome: string }[];
 }) {
+  const router = useRouter();
   const [aberto, setAberto] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciar] = useTransition();
+
+  // revalidatePath limpa o cache do SERVIDOR; o Router Cache do cliente pode
+  // continuar servindo a versao antiga por alguns segundos. Sem este refresh a
+  // baixa grava mas a tela so muda depois de recarregar na mao.
+  const atualizar = () => router.refresh();
 
   const saldo = Number((valor - totalPago).toFixed(2));
   const quitado = saldo <= 0.009;
@@ -91,7 +98,7 @@ export default function Baixa({
                     <button
                       type="button"
                       disabled={pendente}
-                      onClick={() => iniciar(() => void estornarBaixa(b.id))}
+                      onClick={() => iniciar(async () => { await estornarBaixa(b.id); atualizar(); })}
                       className="text-[11px] font-medium text-red-600 hover:underline disabled:opacity-50"
                       title="Desfazer este pagamento"
                     >
@@ -110,7 +117,7 @@ export default function Baixa({
               action={async (fd) => {
                 setErro(null);
                 const r = await registrarBaixa(fd);
-                if (r.ok) setAberto(false);
+                if (r.ok) { setAberto(false); atualizar(); }
                 else setErro(r.erro ?? "Não foi possível registrar.");
               }}
               className="space-y-2"

@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { salvarReceita } from "@/lib/acoes";
 import { Campo, inputCls } from "@/components/ui";
@@ -18,6 +19,7 @@ export default function FormReceita({
   mes: number;
   ano: number;
 }) {
+  const router = useRouter();
   const ref = useRef<HTMLFormElement>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -31,7 +33,7 @@ export default function FormReceita({
         setSalvando(true);
         const r = await salvarReceita(fd);
         setSalvando(false);
-        if (r.ok) ref.current?.reset();
+        if (r.ok) { ref.current?.reset(); router.refresh(); }
         else setErro(r.erro ?? "Não foi possível salvar.");
       }}
       className="grid grid-cols-2 gap-3 md:grid-cols-6"

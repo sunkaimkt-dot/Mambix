@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { salvarPagamento } from "@/lib/acoes";
 import { Campo, inputCls } from "@/components/ui";
@@ -25,6 +26,7 @@ export default function FormPagamento({
   mes: number;
   ano: number;
 }) {
+  const router = useRouter();
   const ref = useRef<HTMLFormElement>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -42,6 +44,7 @@ export default function FormPagamento({
         if (r.ok) {
           ref.current?.reset();
           setJaPago(false);
+          router.refresh();
         } else setErro(r.erro ?? "Não foi possível salvar.");
       }}
       className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-12"

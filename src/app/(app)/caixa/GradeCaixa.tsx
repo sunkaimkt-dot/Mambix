@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { salvarCaixa } from "@/lib/acoes";
 import { brl } from "@/lib/formato";
@@ -21,6 +22,7 @@ export default function GradeCaixa({
   valores: Record<string, number>;
 }) {
   const dias = new Date(ano, mes, 0).getDate();
+  const router = useRouter();
   const [dados, setDados] = useState(valores);
   const [salvando, iniciar] = useTransition();
   const [editando, setEditando] = useState<string | null>(null);
@@ -43,6 +45,7 @@ export default function GradeCaixa({
     iniciar(async () => {
       const r = await salvarCaixa(fd);
       setErro(r.ok ? null : r.erro ?? "Não foi possível salvar.");
+      if (r.ok) router.refresh();
     });
   }
 
