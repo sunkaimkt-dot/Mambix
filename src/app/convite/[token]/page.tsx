@@ -33,7 +33,7 @@ export default async function Convite({ params }: { params: Promise<{ token: str
 
         <p className="mt-4 text-xs text-slate-400">
           Não é você?{" "}
-          <Link href="/auth/signout" className="text-emerald-700 hover:underline">
+          <Link href="/auth/signout" className="text-marca hover:underline">
             Sair desta conta
           </Link>
         </p>

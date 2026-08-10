@@ -56,7 +56,7 @@ export default function GradeCaixa({
 
   return (
     <div className="overflow-x-auto">
-      {salvando && <p className="px-3 py-1 text-xs text-emerald-600">salvando…</p>}
+      {salvando && <p className="px-3 py-1 text-xs text-marca">salvando…</p>}
       {erro && <p className="px-3 py-1 text-xs text-red-600">{erro}</p>}
       <table className="w-full text-sm">
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
@@ -89,13 +89,13 @@ export default function GradeCaixa({
                           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
                           if (e.key === "Escape") setEditando(null);
                         }}
-                        className="w-24 rounded border border-emerald-400 px-1.5 py-1 text-right text-sm outline-none"
+                        className="w-24 rounded border border-marca px-1.5 py-1 text-right text-sm outline-none"
                       />
                     ) : (
                       <button
                         type="button"
                         onClick={() => setEditando(k)}
-                        className={`w-full rounded px-1.5 py-1 text-right tabular-nums hover:bg-emerald-50 ${
+                        className={`w-full rounded px-1.5 py-1 text-right tabular-nums hover:bg-marca-clara ${
                           v ? "" : "text-slate-300"
                         }`}
                       >

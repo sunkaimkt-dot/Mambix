@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "testar:banco": "node supabase/testes/hierarquia.test.mjs && node supabase/testes/migracao.test.mjs"
+    "testar:banco": "node supabase/testes/hierarquia.test.mjs && node supabase/testes/migracao.test.mjs && node supabase/testes/marca.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

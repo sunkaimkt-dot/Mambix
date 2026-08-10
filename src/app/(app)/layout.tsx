@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { supabaseServer } from "@/lib/supabase-server";
+import { carregarMarca, urlDaLogo } from "@/lib/marca";
 import Navegacao from "@/components/Navegacao";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -16,12 +17,27 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq("user_id", user.id)
     .maybeSingle();
 
+  // Sem argumento: a marca sai da empresa que estiver no cookie.
+  const marca = await carregarMarca();
+  const logo = urlDaLogo(marca.logo_url);
+
   return (
     <div className="flex min-h-screen">
       <aside className="hidden w-60 shrink-0 border-r border-slate-200 bg-white p-4 lg:block">
         <div className="mb-6 px-3">
-          <p className="text-lg font-bold tracking-tight">MAMBIX</p>
-          <p className="text-xs text-slate-500">Gestão financeira</p>
+          {logo ? (
+            /* Altura travada e largura livre: logo de cliente vem em qualquer
+               proporcao, e esticar a marca dos outros e falta de cuidado. */
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logo}
+              alt={marca.nome_exibido ?? "Logo"}
+              className="mb-1 h-9 w-auto max-w-full object-contain object-left"
+            />
+          ) : (
+            <p className="text-lg font-bold tracking-tight">{marca.nome_exibido ?? "MAMBIX"}</p>
+          )}
+          {marca.tagline && <p className="text-xs text-slate-500">{marca.tagline}</p>}
         </div>
         <Suspense fallback={null}>
           <Navegacao papel={(perfil?.papel as "plataforma" | "gestor" | "empresario") ?? "empresario"} />

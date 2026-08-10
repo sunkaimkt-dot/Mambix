@@ -60,7 +60,7 @@ export default async function Codigos({
               key={a.chave}
               href={`/codigos?${qs.toString()}`}
               className={`rounded-lg px-3 py-1.5 text-sm ${
-                ativa ? "bg-emerald-50 font-medium text-emerald-700" : "text-slate-600 hover:bg-slate-100"
+                ativa ? "bg-marca-clara font-medium text-marca" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               {a.rotulo}

@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { meuPapel } from "@/lib/contexto";
 import { supabaseServer } from "@/lib/supabase-server";
 import { Cartao, Vazio } from "@/components/ui";
-import { FormGestor, FormCliente, FormEmpresa, FormConvite, BotaoRevogar } from "./Formularios";
+import { FormGestor, FormCliente, FormEmpresa, FormConvite, BotaoRevogar, EmpresaChip } from "./Formularios";
 
 /**
  * Carteira: gestores, clientes, empresas e convites.
@@ -32,7 +32,7 @@ export default async function Carteira() {
   const [gestoresRes, clientesRes, empresasRes, convitesRes, perfilRes] = await Promise.all([
     supabase.from("gestores").select("id, nome, ativo").order("nome"),
     supabase.from("clientes").select("id, nome, gestor_id").order("nome"),
-    supabase.from("empresas").select("id, nome, cliente_id").order("nome"),
+    supabase.from("empresas").select("id, nome, cliente_id, ativa").order("nome"),
     supabase
       .from("convites")
       .select("id, email, papel, cliente_id, gestor_id, expira_em")
@@ -48,10 +48,10 @@ export default async function Carteira() {
   const convites = convitesRes.data ?? [];
   const meuGestorId = (perfilRes.data?.gestor_id as string | null) ?? null;
 
-  const empresasPor = new Map<string, { id: string; nome: string }[]>();
+  const empresasPor = new Map<string, { id: string; nome: string; ativa: boolean }[]>();
   for (const e of empresas) {
     const arr = empresasPor.get(e.cliente_id) ?? [];
-    arr.push({ id: e.id, nome: e.nome });
+    arr.push({ id: e.id, nome: e.nome, ativa: e.ativa });
     empresasPor.set(e.cliente_id, arr);
   }
   const clientesPor = new Map<string, typeof clientes>();
@@ -170,12 +170,7 @@ export default async function Carteira() {
                       <li key={c.id} className="flex flex-wrap items-center gap-1.5 pl-3 text-sm">
                         <span className="text-slate-600">{c.nome}</span>
                         {(empresasPor.get(c.id) ?? []).map((e) => (
-                          <span
-                            key={e.id}
-                            className="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600"
-                          >
-                            {e.nome}
-                          </span>
+                          <EmpresaChip key={e.id} id={e.id} nome={e.nome} ativa={e.ativa} />
                         ))}
                       </li>
                     ))}
@@ -196,9 +191,7 @@ export default async function Carteira() {
                 <span className="font-medium">{c.nome}</span>
                 <div className="mt-1 flex flex-wrap gap-1.5">
                   {(empresasPor.get(c.id) ?? []).map((e) => (
-                    <span key={e.id} className="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                      {e.nome}
-                    </span>
+                    <EmpresaChip key={e.id} id={e.id} nome={e.nome} ativa={e.ativa} />
                   ))}
                   {(empresasPor.get(c.id) ?? []).length === 0 && (
                     <span className="text-xs text-slate-400">sem empresa cadastrada</span>

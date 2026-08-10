@@ -47,6 +47,12 @@ const GRUPOS: Grupo[] = [
       { href: "/codigos", rotulo: "Códigos e listas", pronto: true },
     ],
   },
+  {
+    // Fica fora do grupo acima porque o cliente final tambem personaliza a
+    // propria marca -- o RLS e que limita ate onde ele mexe.
+    titulo: "Personalização",
+    itens: [{ href: "/marca", rotulo: "Marca e cores", pronto: true }],
+  },
 ];
 
 function Cadeado() {
@@ -77,7 +83,7 @@ export default function Navegacao({ papel = "empresario" }: { papel?: "plataform
       <Link
         href={`/dashboard${qs ? `?${qs}` : ""}`}
         className={`block rounded-lg px-3 py-2 text-sm font-medium ${
-          pathname === "/dashboard" ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-100"
+          pathname === "/dashboard" ? "bg-marca-clara text-marca" : "text-slate-600 hover:bg-slate-100"
         }`}
       >
         Painel
@@ -94,7 +100,7 @@ export default function Navegacao({ papel = "empresario" }: { papel?: "plataform
                     href={`${i.href}${qs ? `?${qs}` : ""}`}
                     className={`block rounded-lg px-3 py-2 text-sm ${
                       pathname === i.href
-                        ? "bg-emerald-50 font-medium text-emerald-700"
+                        ? "bg-marca-clara font-medium text-marca"
                         : "text-slate-600 hover:bg-slate-100"
                     }`}
                   >

@@ -143,7 +143,7 @@ export default function FormPagamento({
         </span>
         <button
           disabled={salvando}
-          className="ml-auto rounded-lg bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="ml-auto rounded-lg bg-marca px-5 py-2 text-sm font-semibold text-white hover:bg-marca-escura disabled:opacity-50"
         >
           {salvando ? "Salvando…" : "Lançar pagamento"}
         </button>

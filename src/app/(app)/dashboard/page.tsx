@@ -43,11 +43,11 @@ export default async function Painel({
 
   const cards = [
     { rotulo: "Faturamento (vendas)", valor: faturamento, cor: "text-slate-900" },
-    { rotulo: "Entradas no caixa", valor: entradas, cor: "text-emerald-700" },
-    { rotulo: "Saídas do caixa", valor: saidas, cor: "text-red-700" },
-    { rotulo: "Resultado de caixa", valor: entradas - saidas, cor: entradas - saidas >= 0 ? "text-emerald-700" : "text-red-700" },
+    { rotulo: "Entradas no caixa", valor: entradas, cor: "text-positivo" },
+    { rotulo: "Saídas do caixa", valor: saidas, cor: "text-negativo" },
+    { rotulo: "Resultado de caixa", valor: entradas - saidas, cor: entradas - saidas >= 0 ? "text-positivo" : "text-negativo" },
     { rotulo: "Contas em aberto no mês", valor: aPagar, cor: "text-amber-700" },
-    { rotulo: "Atrasado de meses anteriores", valor: atrasado, cor: atrasado > 0 ? "text-red-700" : "text-slate-400" },
+    { rotulo: "Atrasado de meses anteriores", valor: atrasado, cor: atrasado > 0 ? "text-negativo" : "text-slate-400" },
   ];
 
   const qs = new URLSearchParams(
@@ -78,7 +78,7 @@ export default async function Painel({
             <Link
               key={a.href}
               href={`${a.href}${qs ? `?${qs}` : ""}`}
-              className="rounded-xl border border-slate-200 bg-white p-4 transition hover:border-emerald-400 hover:shadow-sm"
+              className="rounded-xl border border-slate-200 bg-white p-4 transition hover:border-marca hover:shadow-sm"
             >
               <p className="font-semibold">{a.t}</p>
               <p className="text-sm text-slate-500">{a.d}</p>

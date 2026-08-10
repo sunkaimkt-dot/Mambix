@@ -1,6 +1,7 @@
 "use client";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { MESES } from "@/lib/formato";
+import { COOKIE_EMPRESA } from "@/lib/marca-comum";
 
 type Props = {
   empresas: { id: string; nome: string }[];
@@ -17,14 +18,23 @@ export default function SeletorContexto({ empresas, empresaId, lojas, lojaId, me
   const sp = useSearchParams();
 
   function troca(chave: string, valor: string) {
+    /* A empresa aberta tambem vai para um cookie porque a barra lateral vive no
+       layout, e layout do App Router nao enxerga a query string. E o cookie que
+       conta para ele qual marca pintar -- e o que mantem a empresa escolhida ao
+       navegar para uma pagina sem ?empresa= na URL. */
+    if (chave === "empresa") {
+      document.cookie = `${COOKIE_EMPRESA}=${valor}; path=/; max-age=31536000; samesite=lax`;
+    }
     const p = new URLSearchParams(sp.toString());
     p.set(chave, valor);
     router.push(`${pathname}?${p.toString()}`);
+    // O layout e servidor: sem refresh a barra lateral continua com a marca velha.
+    router.refresh();
   }
 
   const anos = [ano - 2, ano - 1, ano, ano + 1];
   const base =
-    "rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-emerald-500";
+    "rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-marca";
 
   return (
     <div className="flex flex-wrap items-center gap-2">

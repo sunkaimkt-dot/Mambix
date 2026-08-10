@@ -1,4 +1,5 @@
 import { supabaseServer } from "@/lib/supabase-server";
+import { empresaDoCookie } from "@/lib/marca";
 
 export type Papel = "plataforma" | "gestor" | "empresario";
 
@@ -36,11 +37,23 @@ export async function meuPapel(): Promise<Papel> {
 
 export async function carregarContexto(sp: Record<string, string | string[] | undefined>): Promise<Contexto | null> {
   const supabase = await supabaseServer();
-  const { data: empresas } = await supabase.from("empresas").select("id, nome").order("nome");
+  // Empresa desligada some do seletor, mas continua no banco com todo o historico.
+  const { data: empresas } = await supabase
+    .from("empresas")
+    .select("id, nome")
+    .eq("ativa", true)
+    .order("nome");
   if (!empresas || empresas.length === 0) return null;
 
+  /* Ordem de preferencia: o que veio na URL, depois a ultima empresa escolhida
+     (cookie), e so entao a primeira da lista. Sem o cookie, abrir uma pagina por
+     um link sem ?empresa= jogava o usuario de volta para a primeira empresa. */
   const pedido = typeof sp.empresa === "string" ? sp.empresa : undefined;
-  const empresa = empresas.find((e) => e.id === pedido) ?? empresas[0];
+  const lembrada = await empresaDoCookie();
+  const empresa =
+    empresas.find((e) => e.id === pedido) ??
+    empresas.find((e) => e.id === lembrada) ??
+    empresas[0];
 
   const hoje = new Date();
   const mes = Number(sp.mes) || hoje.getMonth() + 1;

@@ -1,5 +1,5 @@
 export const inputCls =
-  "w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100";
+  "w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-marca focus:ring-2 focus:ring-marca-clara";
 
 export function Campo({
   rotulo,

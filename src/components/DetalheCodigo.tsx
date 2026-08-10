@@ -95,7 +95,7 @@ export default function DetalheCodigo({
         type="button"
         onClick={() => setAberto(true)}
         title="Ver os lançamentos que formaram este valor"
-        className="text-slate-400 hover:text-emerald-700"
+        className="text-slate-400 hover:text-marca"
       >
         {/* lista */}
         <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" aria-hidden="true">

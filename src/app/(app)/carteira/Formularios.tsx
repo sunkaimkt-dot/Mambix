@@ -1,7 +1,10 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { salvarGestor, salvarCliente, salvarEmpresa, criarConvite, revogarConvite } from "@/lib/acoes";
+import {
+  salvarGestor, salvarCliente, salvarEmpresa, criarConvite, revogarConvite,
+  renomearEmpresa, alternarEmpresa,
+} from "@/lib/acoes";
 import { inputCls } from "@/components/ui";
 
 type Item = { id: string; nome: string };
@@ -24,7 +27,7 @@ export function FormGestor() {
       className="flex flex-wrap items-end gap-2"
     >
       <input name="nome" required placeholder="Nome do gestor financeiro" className={`${inputCls} max-w-xs`} />
-      <button className="rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700">
+      <button className="rounded-lg bg-marca px-4 py-1.5 text-sm font-semibold text-white hover:bg-marca-escura">
         Adicionar gestor
       </button>
       <span className="text-xs text-slate-400">
@@ -69,7 +72,7 @@ export function FormCliente({ gestorId, gestores }: { gestorId: string | null; g
         <input type="hidden" name="gestor_id" value={gestorId} />
       )}
       <input name="nome" required placeholder="Nome do cliente" className={`${inputCls} max-w-xs`} />
-      <button className="rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700">
+      <button className="rounded-lg bg-marca px-4 py-1.5 text-sm font-semibold text-white hover:bg-marca-escura">
         Adicionar cliente
       </button>
       {erro && <span className="text-sm text-red-600">{erro}</span>}
@@ -102,7 +105,7 @@ export function FormEmpresa({ clientes }: { clientes: Item[] }) {
           <option key={c.id} value={c.id}>{c.nome}</option>
         ))}
       </select>
-      <button className="rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700">
+      <button className="rounded-lg bg-marca px-4 py-1.5 text-sm font-semibold text-white hover:bg-marca-escura">
         Adicionar empresa
       </button>
       <span className="text-xs text-slate-400">Já nasce com os 100 códigos e a loja matriz.</span>
@@ -146,7 +149,7 @@ export function FormConvite({
               type="button"
               onClick={() => { setPapel(p); setLink(null); setErro(null); }}
               className={`rounded-lg px-3 py-1 text-sm ${
-                papel === p ? "bg-emerald-50 font-medium text-emerald-700" : "text-slate-600 hover:bg-slate-100"
+                papel === p ? "bg-marca-clara font-medium text-marca" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               {p === "gestor" ? "Gestor financeiro" : "Cliente final"}
@@ -202,8 +205,8 @@ export function FormConvite({
       </form>
 
       {link && (
-        <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-emerald-800">
+        <div className="mt-3 rounded-lg border border-marca-clara bg-marca-clara p-3">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-marca-escura">
             Convite de {paraGestor ? "gestor" : "cliente"} criado — envie este link
           </p>
           <div className="flex flex-wrap items-center gap-2">
@@ -219,7 +222,7 @@ export function FormConvite({
               {copiado ? "Copiado" : "Copiar"}
             </button>
           </div>
-          <p className="mt-1.5 text-[11px] text-emerald-800">
+          <p className="mt-1.5 text-[11px] text-marca-escura">
             Vale 7 dias e só funciona para esse e-mail. Quem se cadastrar sem convite não vê nada.
           </p>
         </div>
@@ -245,5 +248,81 @@ export function BotaoRevogar({ id }: { id: string }) {
     >
       revogar
     </button>
+  );
+}
+
+
+/**
+ * Empresa na lista da carteira: clica no nome para renomear, e o interruptor
+ * liga ou desliga.
+ *
+ * Desligar nao apaga nada -- a empresa some do seletor e o historico continua no
+ * banco. Empresa com anos de lancamento nao deveria ter botao de excluir.
+ */
+export function EmpresaChip({ id, nome, ativa }: { id: string; nome: string; ativa: boolean }) {
+  const router = useRouter();
+  const [editando, setEditando] = useState(false);
+  const [valor, setValor] = useState(nome);
+  const [ocupado, setOcupado] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  async function gravar() {
+    const limpo = valor.trim();
+    if (!limpo || limpo === nome) { setEditando(false); setValor(nome); return; }
+    setOcupado(true);
+    const fd = new FormData();
+    fd.set("id", id);
+    fd.set("nome", limpo);
+    const r = await renomearEmpresa(fd);
+    setOcupado(false);
+    if (!r.ok) { setErro(r.erro ?? "Não foi possível renomear."); setValor(nome); }
+    setEditando(false);
+    router.refresh();
+  }
+
+  async function alternar() {
+    setOcupado(true);
+    const r = await alternarEmpresa(id, !ativa);
+    setOcupado(false);
+    if (!r.ok) setErro(r.erro ?? "Não foi possível alterar.");
+    router.refresh();
+  }
+
+  if (editando) {
+    return (
+      <input
+        autoFocus
+        value={valor}
+        disabled={ocupado}
+        onChange={(e) => setValor(e.target.value)}
+        onBlur={gravar}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") gravar();
+          if (e.key === "Escape") { setValor(nome); setEditando(false); }
+        }}
+        className="rounded-md border border-slate-300 px-2 py-0.5 text-xs outline-none focus:border-marca"
+      />
+    );
+  }
+
+  return (
+    <span
+      className={`group inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs ${
+        ativa ? "bg-slate-100 text-slate-600" : "bg-slate-50 text-slate-400 line-through"
+      }`}
+    >
+      <button onClick={() => setEditando(true)} className="hover:underline" title="Clique para renomear">
+        {nome}
+      </button>
+      <button
+        onClick={alternar}
+        disabled={ocupado}
+        title={ativa ? "Desligar (some do seletor, histórico fica)" : "Religar"}
+        className="text-slate-400 opacity-0 transition group-hover:opacity-100 hover:text-slate-700 disabled:opacity-40"
+      >
+        {ativa ? "×" : "↺"}
+      </button>
+      {erro && <span className="text-red-600">{erro}</span>}
+    </span>
   );
 }

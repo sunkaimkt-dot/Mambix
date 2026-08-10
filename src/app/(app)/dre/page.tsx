@@ -76,7 +76,7 @@ export default async function DRE({
         <Cartao className="p-4">
           <div className="mb-3 flex items-baseline justify-between">
             <p className="text-sm font-semibold">Despesas por grupo</p>
-            <p className="text-lg font-bold text-red-700">{brl(d.despesas)}</p>
+            <p className="text-lg font-bold text-negativo">{brl(d.despesas)}</p>
           </div>
           <table className="w-full text-sm">
             <tbody className="divide-y divide-slate-100">
@@ -101,12 +101,12 @@ export default async function DRE({
             { r: "Faturamento", v: d.faturamento, p: 1, cor: "text-slate-900" },
             { r: "CMV / CPV", v: d.cmv, p: base ? d.cmv / base : 0, cor: "text-slate-600" },
             { r: "Lucro bruto", v: d.lucroBruto, p: d.margem, cor: "text-slate-900" },
-            { r: "Despesas", v: d.despesas, p: base ? d.despesas / base : 0, cor: "text-red-700" },
+            { r: "Despesas", v: d.despesas, p: base ? d.despesas / base : 0, cor: "text-negativo" },
             {
               r: "Resultado",
               v: d.resultado,
               p: base ? d.resultado / base : 0,
-              cor: d.resultado >= 0 ? "text-emerald-700" : "text-red-700",
+              cor: d.resultado >= 0 ? "text-positivo" : "text-negativo",
             },
           ].map((c) => (
             <div key={c.r}>

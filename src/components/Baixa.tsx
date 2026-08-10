@@ -175,7 +175,7 @@ export default function Baixa({
               </p>
 
               <div className="flex gap-2">
-                <button className="flex-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700">
+                <button className="flex-1 rounded-lg bg-marca px-3 py-1.5 text-sm font-semibold text-white hover:bg-marca-escura">
                   Registrar pagamento
                 </button>
                 <button

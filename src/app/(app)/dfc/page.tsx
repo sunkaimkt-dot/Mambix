@@ -46,7 +46,7 @@ export default async function DFC({
         <Cartao className="p-4">
           <div className="mb-3 flex items-baseline justify-between">
             <p className="text-sm font-semibold">Entradas</p>
-            <p className="text-lg font-bold text-emerald-700">{brl(d.entradas)}</p>
+            <p className="text-lg font-bold text-positivo">{brl(d.entradas)}</p>
           </div>
           <table className="w-full text-sm">
             <tbody className="divide-y divide-slate-100">
@@ -63,7 +63,7 @@ export default async function DFC({
         <Cartao className="p-4">
           <div className="mb-3 flex items-baseline justify-between">
             <p className="text-sm font-semibold">Saídas por grupo</p>
-            <p className="text-lg font-bold text-red-700">{brl(d.saidas)}</p>
+            <p className="text-lg font-bold text-negativo">{brl(d.saidas)}</p>
           </div>
           <table className="w-full text-sm">
             <tbody className="divide-y divide-slate-100">
@@ -83,15 +83,15 @@ export default async function DFC({
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Entradas</p>
-              <p className="text-lg font-bold text-emerald-700">{brl(d.entradas)}</p>
+              <p className="text-lg font-bold text-positivo">{brl(d.entradas)}</p>
             </div>
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Saídas</p>
-              <p className="text-lg font-bold text-red-700">{brl(d.saidas)}</p>
+              <p className="text-lg font-bold text-negativo">{brl(d.saidas)}</p>
             </div>
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Resultado do mês</p>
-              <p className={`text-lg font-bold ${d.resultado >= 0 ? "text-emerald-700" : "text-red-700"}`}>
+              <p className={`text-lg font-bold ${d.resultado >= 0 ? "text-positivo" : "text-negativo"}`}>
                 {brl(d.resultado)}
               </p>
             </div>

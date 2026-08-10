@@ -77,11 +77,11 @@ export default function FormCodigos({
       <div className="sticky bottom-0 mt-6 flex items-center gap-3 border-t border-slate-200 bg-white py-3">
         <button
           disabled={estado === "salvando"}
-          className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="rounded-lg bg-marca px-5 py-2 text-sm font-semibold text-white hover:bg-marca-escura disabled:opacity-50"
         >
           {estado === "salvando" ? "Salvando…" : "Salvar alterações"}
         </button>
-        {estado === "salvo" && <span className="text-sm font-medium text-emerald-700">Salvo.</span>}
+        {estado === "salvo" && <span className="text-sm font-medium text-marca">Salvo.</span>}
         {erro && <span className="text-sm text-red-600">{erro}</span>}
         <span className="ml-auto text-xs text-slate-400">Vale só para esta empresa.</span>
       </div>

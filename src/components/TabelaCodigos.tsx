@@ -67,7 +67,7 @@ export default function TabelaCodigos({
                     {l.valor ? (
                       <Link
                         href={`/evolucao/${l.codigo}${sufixo}`}
-                        className="font-medium text-emerald-700 hover:underline"
+                        className="font-medium text-marca hover:underline"
                         title="Ver a evolução do ano"
                       >
                         {l.codigo}

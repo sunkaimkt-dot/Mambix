@@ -379,3 +379,184 @@ export async function excluirLancamento(
   revalidatePath("/caixa");
   return { ok: true };
 }
+
+// ============================================================
+// Marca (white-label)
+// ============================================================
+
+export type NivelMarca = "plataforma" | "gestor" | "cliente" | "empresa";
+
+/* Traduz o nivel escolhido na tela para a coluna de dono da tabela `marcas`.
+   Quem autoriza e o RLS -- aqui so se monta a linha. Se o usuario forjar um
+   nivel que nao e dele, o banco recusa. */
+function donoDaMarca(nivel: NivelMarca, id: string | null) {
+  return {
+    gestor_id: nivel === "gestor" ? id : null,
+    cliente_id: nivel === "cliente" ? id : null,
+    empresa_id: nivel === "empresa" ? id : null,
+  };
+}
+
+const HEX = /^#[0-9A-Fa-f]{6}$/;
+function cor(fd: FormData, k: string) {
+  const v = texto(fd, k);
+  if (!v) return null;
+  return HEX.test(v) ? v.toUpperCase() : null;
+}
+
+export async function salvarMarca(fd: FormData): Promise<Resultado> {
+  const nivel = (texto(fd, "nivel") ?? "") as NivelMarca;
+  if (!["plataforma", "gestor", "cliente", "empresa"].includes(nivel)) {
+    return { ok: false, erro: "Nível inválido." };
+  }
+  const id = nivel === "plataforma" ? null : texto(fd, "id");
+  if (nivel !== "plataforma" && !id) return { ok: false, erro: "Escolha de quem é esta marca." };
+
+  // Campo vazio nao vira string vazia: vira null, que e o que faz herdar do
+  // nivel de cima. Sem isso, limpar um campo travaria a heranca com "".
+  const linha = {
+    ...donoDaMarca(nivel, id),
+    nome_exibido: texto(fd, "nome_exibido"),
+    tagline: texto(fd, "tagline"),
+    cor_primaria: cor(fd, "cor_primaria"),
+    cor_secundaria: cor(fd, "cor_secundaria"),
+    cor_positivo: cor(fd, "cor_positivo"),
+    cor_negativo: cor(fd, "cor_negativo"),
+    atualizado_em: new Date().toISOString(),
+  };
+
+  const supabase = await supabaseServer();
+  const { data: sessao } = await supabase.auth.getUser();
+
+  const filtro =
+    nivel === "plataforma"
+      ? supabase.from("marcas").select("id").is("gestor_id", null).is("cliente_id", null).is("empresa_id", null)
+      : supabase.from("marcas").select("id").eq(`${nivel}_id`, id!);
+
+  const { data: existente } = await filtro.maybeSingle();
+
+  const { error } = existente
+    ? await supabase
+        .from("marcas")
+        .update({ ...linha, atualizado_por: sessao.user?.id ?? null })
+        .eq("id", existente.id)
+    : await supabase.from("marcas").insert({ ...linha, atualizado_por: sessao.user?.id ?? null });
+
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+const TIPOS_ACEITOS = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
+const TAMANHO_MAXIMO = 2 * 1024 * 1024;
+
+/**
+ * Sobe a logo para o bucket `marcas`.
+ *
+ * O caminho segue <nivel>/<uuid do dono>/<arquivo> porque e dele que a policy do
+ * Storage tira a autorizacao -- pode_gravar_logo() le a primeira e a segunda
+ * pasta. Caminho fora dessa forma e recusado pelo banco.
+ *
+ * O nome do arquivo leva a hora: navegador e CDN guardam imagem em cache por
+ * URL, e reaproveitar o mesmo nome faria o cliente continuar vendo a logo antiga
+ * depois de trocar.
+ */
+export async function enviarLogo(fd: FormData): Promise<Resultado & { caminho?: string }> {
+  const nivel = (texto(fd, "nivel") ?? "") as NivelMarca;
+  const id = nivel === "plataforma" ? "geral" : texto(fd, "id");
+  const campo = texto(fd, "campo") === "negativo" ? "logo_negativo_url" : "logo_url";
+  const arquivo = fd.get("arquivo");
+
+  if (!["plataforma", "gestor", "cliente", "empresa"].includes(nivel)) {
+    return { ok: false, erro: "Nível inválido." };
+  }
+  if (!id) return { ok: false, erro: "Escolha de quem é esta marca." };
+  if (!(arquivo instanceof File) || arquivo.size === 0) return { ok: false, erro: "Escolha um arquivo." };
+  if (!TIPOS_ACEITOS.includes(arquivo.type)) {
+    return { ok: false, erro: "A logo precisa ser PNG, JPG, SVG ou WEBP." };
+  }
+  if (arquivo.size > TAMANHO_MAXIMO) return { ok: false, erro: "A logo precisa ter menos de 2 MB." };
+
+  const extensao = { "image/png": "png", "image/jpeg": "jpg", "image/svg+xml": "svg", "image/webp": "webp" }[
+    arquivo.type
+  ]!;
+  const caminho = `${nivel}/${id}/${campo === "logo_url" ? "logo" : "logo-negativa"}-${Date.now()}.${extensao}`;
+
+  const supabase = await supabaseServer();
+  const { error: erroUpload } = await supabase.storage
+    .from("marcas")
+    .upload(caminho, arquivo, { contentType: arquivo.type, upsert: true });
+
+  if (erroUpload) {
+    const m = erroUpload.message;
+    if (m.toLowerCase().includes("bucket")) {
+      return { ok: false, erro: "O armazenamento de logos ainda não foi criado no Supabase." };
+    }
+    return { ok: false, erro: amigavel(m) };
+  }
+
+  const dono = donoDaMarca(nivel, nivel === "plataforma" ? null : id);
+  const { data: sessao } = await supabase.auth.getUser();
+
+  const filtro =
+    nivel === "plataforma"
+      ? supabase.from("marcas").select("id").is("gestor_id", null).is("cliente_id", null).is("empresa_id", null)
+      : supabase.from("marcas").select("id").eq(`${nivel}_id`, id);
+  const { data: existente } = await filtro.maybeSingle();
+
+  const { error } = existente
+    ? await supabase.from("marcas").update({ [campo]: caminho }).eq("id", existente.id)
+    : await supabase.from("marcas").insert({ ...dono, [campo]: caminho, atualizado_por: sessao.user?.id ?? null });
+
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/", "layout");
+  return { ok: true, caminho };
+}
+
+export async function removerLogo(fd: FormData): Promise<Resultado> {
+  const nivel = (texto(fd, "nivel") ?? "") as NivelMarca;
+  const id = nivel === "plataforma" ? null : texto(fd, "id");
+  const campo = texto(fd, "campo") === "negativo" ? "logo_negativo_url" : "logo_url";
+
+  const supabase = await supabaseServer();
+  const filtro =
+    nivel === "plataforma"
+      ? supabase.from("marcas").select("id").is("gestor_id", null).is("cliente_id", null).is("empresa_id", null)
+      : supabase.from("marcas").select("id").eq(`${nivel}_id`, id ?? "");
+  const { data: existente } = await filtro.maybeSingle();
+  if (!existente) return { ok: true };
+
+  // O arquivo fica no bucket de proposito: some da tela, mas nao se apaga
+  // material de marca de cliente por causa de um clique.
+  const { error } = await supabase.from("marcas").update({ [campo]: null }).eq("id", existente.id);
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// ============================================================
+// Empresa
+// ============================================================
+
+export async function renomearEmpresa(fd: FormData): Promise<Resultado> {
+  const id = texto(fd, "id");
+  const nome = texto(fd, "nome");
+  if (!id) return { ok: false, erro: "Empresa não identificada." };
+  if (!nome) return { ok: false, erro: "Informe o nome da empresa." };
+
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from("empresas").update({ nome }).eq("id", id);
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/* Empresa nao se apaga: ela guarda anos de lancamento. Desligar tira do seletor
+   e mantem o historico intacto. */
+export async function alternarEmpresa(id: string, ativa: boolean): Promise<Resultado> {
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from("empresas").update({ ativa }).eq("id", id);
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}

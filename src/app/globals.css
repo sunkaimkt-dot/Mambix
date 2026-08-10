@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Cores da marca.
+   Estes valores sao o ULTIMO recurso -- valem enquanto o servidor nao respondeu.
+   Quem manda de verdade e o `style` que o layout injeta no <html>, montado a
+   partir de marca_efetiva() no banco. Os tons claro e escuro sao derivados por
+   color-mix para o cliente informar UMA cor e o sistema se virar com o resto. */
+:root {
+  --marca: #047857;
+  --marca-2: #059669;
+  --positivo: #047857;
+  --negativo: #dc2626;
+
+  --marca-clara: color-mix(in srgb, var(--marca) 10%, white);
+  --marca-escura: color-mix(in srgb, var(--marca) 82%, black);
+  --marca-contraste: white;
+}

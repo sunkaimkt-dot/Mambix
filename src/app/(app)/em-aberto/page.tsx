@@ -67,7 +67,7 @@ export default async function EmAberto({
     return (
       <Cartao className="mb-6">
         <p className={`border-b border-slate-100 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide ${
-          alerta ? "text-red-700" : "text-slate-500"
+          alerta ? "text-negativo" : "text-slate-500"
         }`}>
           {titulo}
         </p>
@@ -140,7 +140,7 @@ export default async function EmAberto({
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <p className="text-xs uppercase tracking-wide text-slate-500">Vencido e não pago</p>
-          <p className={`text-xl font-bold ${totalAtrasado > 0 ? "text-red-700" : "text-slate-400"}`}>
+          <p className={`text-xl font-bold ${totalAtrasado > 0 ? "text-negativo" : "text-slate-400"}`}>
             {brl(totalAtrasado)}
           </p>
         </div>

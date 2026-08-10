@@ -64,11 +64,11 @@ export default function FormParametros({
       <div className="flex items-center gap-3">
         <button
           disabled={salvando}
-          className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="rounded-lg bg-marca px-5 py-2 text-sm font-semibold text-white hover:bg-marca-escura disabled:opacity-50"
         >
           {salvando ? "Salvando…" : "Salvar"}
         </button>
-        {ok && <span className="text-sm text-emerald-700">Salvo.</span>}
+        {ok && <span className="text-sm text-marca">Salvo.</span>}
         {erro && <span className="text-sm text-red-600">{erro}</span>}
       </div>
     </form>

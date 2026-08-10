@@ -65,7 +65,7 @@ export default async function Receitas({
         <Cartao className="overflow-hidden">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
             <p className="text-sm font-semibold">Entradas do mês</p>
-            <p className="text-sm font-bold text-emerald-700">{brl(total)}</p>
+            <p className="text-sm font-bold text-positivo">{brl(total)}</p>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">

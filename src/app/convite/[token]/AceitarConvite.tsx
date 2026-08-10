@@ -22,7 +22,7 @@ export default function AceitarConvite({ token }: { token: string }) {
             setIndo(false);
           }
         }}
-        className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+        className="w-full rounded-lg bg-marca px-4 py-2.5 text-sm font-semibold text-white hover:bg-marca-escura disabled:opacity-50"
       >
         {indo ? "Aceitando…" : "Aceitar convite"}
       </button>
