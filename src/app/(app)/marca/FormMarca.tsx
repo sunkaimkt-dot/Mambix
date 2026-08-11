@@ -13,9 +13,12 @@ export type Alvo = {
   pai: string | null;
 };
 
+/* `cor_secundaria` existe na tabela mas nao aparece aqui de proposito: nenhuma
+   parte da interface usa essa cor ainda, e campo que promete e nao cumpre e pior
+   do que campo que nao existe. O tom escuro do hover sai calculado da cor
+   principal, entao o consultor informa UMA cor e o resto se resolve. */
 const CAMPOS_COR = [
   { k: "cor_primaria", rotulo: "Cor principal", ajuda: "Botões, links e o item ativo do menu." },
-  { k: "cor_secundaria", rotulo: "Cor de apoio", ajuda: "Realces e detalhes secundários." },
   { k: "cor_positivo", rotulo: "Números positivos", ajuda: "Entradas, receitas e lucro." },
   { k: "cor_negativo", rotulo: "Números negativos", ajuda: "Despesas, saídas e atrasos." },
 ] as const;
@@ -86,7 +89,7 @@ export default function FormMarca({
     const fd = new FormData();
     fd.set("nivel", alvo.nivel);
     if (alvo.id) fd.set("id", alvo.id);
-    for (const k of ["nome_exibido", "tagline", "cor_primaria", "cor_secundaria", "cor_positivo", "cor_negativo"] as const) {
+    for (const k of ["nome_exibido", "tagline", "cor_primaria", "cor_positivo", "cor_negativo"] as const) {
       if (form[k]) fd.set(k, form[k]!);
     }
     const r = await salvarMarca(fd);
@@ -196,7 +199,7 @@ export default function FormMarca({
             </Campo>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {CAMPOS_COR.map(({ k, rotulo, ajuda }) => (
               <div key={k}>
                 <Campo rotulo={rotulo}>

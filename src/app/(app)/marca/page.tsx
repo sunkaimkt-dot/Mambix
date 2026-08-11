@@ -1,6 +1,6 @@
 import { meuPapel } from "@/lib/contexto";
 import { supabaseServer } from "@/lib/supabase-server";
-import { urlDaLogo, type Marca } from "@/lib/marca";
+import { urlDaLogo, MARCA_PADRAO, type Marca } from "@/lib/marca";
 import { Cartao } from "@/components/ui";
 import FormMarca, { type Alvo } from "./FormMarca";
 
@@ -50,12 +50,19 @@ export default async function PaginaMarca() {
 
   // Só a plataforma mexe na marca do produto.
   if (papel === "plataforma") {
-    alvos.push({ nivel: "plataforma", id: null, rotulo: "MAMBIX (a plataforma)", grupo: "Produto", pai: null });
+    const nomeDaPlataforma = valores[chave("plataforma", null)]?.nome_exibido ?? MARCA_PADRAO.nome_exibido;
+    alvos.push({
+      nivel: "plataforma",
+      id: null,
+      rotulo: `${nomeDaPlataforma} (a plataforma)`,
+      grupo: "Produto",
+      pai: null,
+    });
   }
   // O gestor edita a propria; a plataforma edita a de todos.
   if (papel === "gestor" || papel === "plataforma") {
     for (const g of gestores) {
-      alvos.push({ nivel: "gestor", id: g.id, rotulo: g.nome, grupo: "Consultoria", pai: chave("plataforma", null) });
+      alvos.push({ nivel: "gestor", id: g.id, rotulo: g.nome, grupo: "BPO financeiro", pai: chave("plataforma", null) });
     }
   }
   for (const c of clientes) {

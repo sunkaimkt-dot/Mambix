@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { supabaseServer } from "@/lib/supabase-server";
-import { carregarMarca, urlDaLogo } from "@/lib/marca";
+import { carregarMarca, urlDaLogo, MARCA_PADRAO } from "@/lib/marca";
 import Navegacao from "@/components/Navegacao";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -35,7 +35,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               className="mb-1 h-9 w-auto max-w-full object-contain object-left"
             />
           ) : (
-            <p className="text-lg font-bold tracking-tight">{marca.nome_exibido ?? "MAMBIX"}</p>
+            <p className="text-lg font-bold tracking-tight">{marca.nome_exibido ?? MARCA_PADRAO.nome_exibido}</p>
           )}
           {marca.tagline && <p className="text-xs text-slate-500">{marca.tagline}</p>}
         </div>
@@ -48,7 +48,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {perfil?.papel === "plataforma"
               ? "Leads de Sucesso"
               : perfil?.papel === "gestor"
-                ? "Gestor financeiro"
+                ? "BPO financeiro"
                 : perfil?.papel === "empresario"
                   ? "Cliente"
                   : "sem perfil"}

@@ -14,16 +14,16 @@ export type Marca = {
   cor_negativo: string | null;
 };
 
-/* Ultimo recurso, para o caso de o banco nao responder. Mesmos valores da linha
-   de plataforma semeada na migration 0008 -- que sao as cores que o sistema ja
-   usava antes de existir white-label. */
+/* Ultimo recurso, para o caso de o banco nao responder. Espelha a linha de
+   plataforma que esta gravada no banco -- se as duas divergirem, a tela pisca
+   uma cor no primeiro render e outra depois. */
 export const MARCA_PADRAO: Marca = {
   logo_url: null,
   logo_negativo_url: null,
-  nome_exibido: "MAMBIX",
-  tagline: "Gestão financeira",
-  cor_primaria: "#047857",
-  cor_secundaria: "#059669",
+  nome_exibido: "Nortex",
+  tagline: "BPO Financeiro",
+  cor_primaria: "#1B4F7A",
+  cor_secundaria: "#153F62",
   cor_positivo: "#047857",
   cor_negativo: "#DC2626",
 };

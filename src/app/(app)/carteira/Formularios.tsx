@@ -152,7 +152,7 @@ export function FormConvite({
                 papel === p ? "bg-marca-clara font-medium text-marca" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              {p === "gestor" ? "Gestor financeiro" : "Cliente final"}
+              {p === "gestor" ? "BPO financeiro" : "Cliente final"}
             </button>
           ))}
         </div>

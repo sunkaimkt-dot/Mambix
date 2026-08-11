@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { carregarMarca, variaveisDaMarca } from "@/lib/marca";
+import { carregarMarca, variaveisDaMarca, MARCA_PADRAO } from "@/lib/marca";
 import "./globals.css";
 
 /* O nome da aba tambem e white-label: quem abre o sistema pela conta de um
    consultor le a marca dele, nao a do produto. */
 export async function generateMetadata(): Promise<Metadata> {
   const marca = await carregarMarca();
-  const nome = marca.nome_exibido ?? "MAMBIX";
+  const nome = marca.nome_exibido ?? MARCA_PADRAO.nome_exibido;
   return {
     title: marca.tagline ? `${nome} — ${marca.tagline}` : nome,
     description: "DRE gerencial, fluxo de caixa e evolução financeira",

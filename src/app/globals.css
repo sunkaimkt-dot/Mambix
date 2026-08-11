@@ -8,8 +8,8 @@
    partir de marca_efetiva() no banco. Os tons claro e escuro sao derivados por
    color-mix para o cliente informar UMA cor e o sistema se virar com o resto. */
 :root {
-  --marca: #047857;
-  --marca-2: #059669;
+  --marca: #1B4F7A;
+  --marca-2: #153F62;
   --positivo: #047857;
   --negativo: #dc2626;
 
