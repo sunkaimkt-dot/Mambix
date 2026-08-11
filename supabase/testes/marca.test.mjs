@@ -207,6 +207,44 @@ checa("Caminho fora da convencao e recusado", await podeGravar(uGestorA, `logo.p
 checa("Caminho com uuid invalido e recusado", await podeGravar(uGestorA, `gestor/nao-e-uuid/logo.png`) === false);
 checa("Nivel inventado e recusado", await podeGravar(uNeto, `raiz/${gA}/logo.png`) === false);
 
+
+// -------------------------------------------------- 7. endereco publico do consultor
+console.log("\n\x1b[1mFASE 7 - endereco publico (nortex.app/<apelido>)\x1b[0m");
+await db.exec(`update gestores set apelido = 'mambix' where id = '${gA}'`);
+
+const publica = async (apelido) =>
+  (await db.query(`select * from marca_publica($1)`, [apelido])).rows[0];
+
+let p = await publica("mambix");
+checa("Apelido devolve a marca do consultor", p && p.nome_exibido === "Mambix", `veio ${JSON.stringify(p)}`);
+checa("E a cor dele, nao a da plataforma", p.cor_primaria === "#1F205A", `veio ${p.cor_primaria}`);
+checa("Cor que ele nao definiu desce da plataforma", p.cor_negativo === "#DC2626", `veio ${p.cor_negativo}`);
+
+checa("Apelido inexistente nao devolve nada", (await publica("nao-existe")) === undefined);
+checa("Apelido com espaco e maiuscula ainda encontra", (await publica("  MAMBIX ")) !== undefined);
+
+checa("Banco recusa apelido com espaco",
+  (await tenta(uNeto, `update gestores set apelido = 'mam bix' where id = '${gB}'`)) !== null,
+  "apelido invalido entrou");
+checa("Banco recusa apelido com acento",
+  (await tenta(uNeto, `update gestores set apelido = 'mambíx' where id = '${gB}'`)) !== null,
+  "apelido com acento entrou");
+checa("Banco recusa dois consultores com o mesmo apelido",
+  (await tenta(uNeto, `update gestores set apelido = 'mambix' where id = '${gB}'`)) !== null,
+  "apelido duplicado entrou");
+checa("Banco recusa apelido que e nome de tela",
+  (await tenta(uNeto, `update gestores set apelido = 'dashboard' where id = '${gB}'`)) !== null,
+  "apelido reservado entrou");
+
+await db.exec(`update gestores set ativo = false where id = '${gA}'`);
+checa("Consultor desativado some do endereco publico", (await publica("mambix")) === undefined);
+await db.exec(`update gestores set ativo = true where id = '${gA}'`);
+
+checa("Gestor B nao consegue mexer no apelido de ninguem",
+  (await tenta(uGestorB, `update gestores set apelido = 'roubado' where id = '${gA}'`)) === null &&
+  (await db.query(`select apelido from gestores where id = '${gA}'`)).rows[0].apelido === "mambix",
+  "apelido foi alterado por quem nao devia");
+
 // -------------------------------------------------- fim
 console.log("");
 if (falhas === 0) console.log("\x1b[32m\x1b[1mTODOS OS TESTES DE MARCA PASSARAM\x1b[0m");
