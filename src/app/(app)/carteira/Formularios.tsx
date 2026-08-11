@@ -9,7 +9,7 @@ import { inputCls } from "@/components/ui";
 
 type Item = { id: string; nome: string };
 
-/** Cadastro de gestor financeiro. Só a plataforma vê este formulário. */
+/** Cadastro de BPO financeiro (o consultor). Só a plataforma vê este formulário. */
 export function FormGestor() {
   const router = useRouter();
   const ref = useRef<HTMLFormElement>(null);
@@ -26,9 +26,9 @@ export function FormGestor() {
       }}
       className="flex flex-wrap items-end gap-2"
     >
-      <input name="nome" required placeholder="Nome do gestor financeiro" className={`${inputCls} max-w-xs`} />
+      <input name="nome" required placeholder="Nome do BPO financeiro" className={`${inputCls} max-w-xs`} />
       <button className="rounded-lg bg-marca px-4 py-1.5 text-sm font-semibold text-white hover:bg-marca-escura">
-        Adicionar gestor
+        Adicionar BPO
       </button>
       <span className="text-xs text-slate-400">
         Depois gere um convite para dar acesso a ele.

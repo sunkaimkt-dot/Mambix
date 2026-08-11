@@ -288,7 +288,7 @@ export async function salvarCliente(fd: FormData): Promise<Resultado> {
       ok: false,
       erro:
         perfil?.papel === "plataforma"
-          ? "Selecione de qual gestor é este cliente."
+          ? "Selecione de qual BPO é este cliente."
           : "Sua conta não está vinculada a nenhuma carteira.",
     };
   }

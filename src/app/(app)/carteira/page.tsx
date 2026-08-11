@@ -82,7 +82,7 @@ export default async function Carteira() {
         <h1 className="text-lg font-bold">{ehPlataforma ? "Plataforma" : "Minha carteira"}</h1>
         <p className="text-sm text-slate-500">
           {ehPlataforma
-            ? "Todos os gestores e suas carteiras."
+            ? "Todos os BPOs e suas carteiras."
             : "Seus clientes e as empresas de cada um."}
         </p>
       </div>
@@ -90,7 +90,7 @@ export default async function Carteira() {
       {ehPlataforma && (
         <Cartao className="mb-6 p-4">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Novo gestor financeiro
+            Novo BPO financeiro
           </p>
           <FormGestor />
         </Cartao>
@@ -115,7 +115,7 @@ export default async function Carteira() {
           <Cartao className="mb-6 p-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Dar acesso</p>
             {clientes.length === 0 && gestores.length === 0 ? (
-              <p className="text-sm text-slate-500">Cadastre um gestor ou cliente primeiro.</p>
+              <p className="text-sm text-slate-500">Cadastre um BPO ou cliente primeiro.</p>
             ) : (
               <FormConvite
                 clientes={clientes}
@@ -185,7 +185,7 @@ export default async function Carteira() {
 
       <Cartao>
         <p className="border-b border-slate-100 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {ehPlataforma ? "Gestores e carteiras" : "Clientes e empresas"}
+          {ehPlataforma ? "BPOs e carteiras" : "Clientes e empresas"}
         </p>
 
         {ehPlataforma ? (
