@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import {
   salvarGestor, salvarCliente, salvarEmpresa, criarConvite, revogarConvite,
-  renomearEmpresa, alternarEmpresa,
+  renomearEmpresa, alternarEmpresa, trocarFuncao,
 } from "@/lib/acoes";
 import { inputCls } from "@/components/ui";
 
@@ -183,12 +183,20 @@ export function FormConvite({
         />
 
         {paraGestor ? (
-          <select name="gestor_id" required className={`${inputCls} max-w-xs`} defaultValue="">
-            <option value="" disabled>Gestor…</option>
-            {gestores.map((g) => (
-              <option key={g.id} value={g.id}>{g.nome}</option>
-            ))}
-          </select>
+          <>
+            <select name="gestor_id" required className={`${inputCls} max-w-xs`} defaultValue="">
+              <option value="" disabled>BPO…</option>
+              {gestores.map((g) => (
+                <option key={g.id} value={g.id}>{g.nome}</option>
+              ))}
+            </select>
+            {/* Quem nao escolher entra como operador -- e o banco que garante. */}
+            <select name="funcao" className={`${inputCls} max-w-[190px]`} defaultValue="operador">
+              <option value="admin">Administrador — faz tudo</option>
+              <option value="operador">Operador — lança e dá baixa</option>
+              <option value="consulta">Consulta — só lê</option>
+            </select>
+          </>
         ) : (
           <select name="cliente_id" required className={`${inputCls} max-w-xs`} defaultValue="">
             <option value="" disabled>Cliente…</option>
@@ -324,5 +332,82 @@ export function EmpresaChip({ id, nome, ativa }: { id: string; nome: string; ati
       </button>
       {erro && <span className="text-red-600">{erro}</span>}
     </span>
+  );
+}
+
+
+const NOMES_DE_FUNCAO = {
+  admin: "Administrador",
+  operador: "Operador",
+  consulta: "Consulta",
+} as const;
+
+const DESCRICAO_DA_FUNCAO = {
+  admin: "cadastra clientes e empresas, convida pessoas e edita a marca",
+  operador: "lança, edita e dá baixa; não cadastra nem convida",
+  consulta: "só lê relatórios",
+} as const;
+
+/**
+ * Linha de uma pessoa da equipe do BPO, com a função dela.
+ *
+ * O admin troca a função aqui mesmo. Ele nao aparece para si proprio com o
+ * seletor habilitado: quem muda o proprio nivel de acesso pode se promover, e o
+ * banco recusa de qualquer forma -- a tela so evita a frustacao do clique.
+ */
+export function LinhaDaEquipe({
+  userId,
+  nome,
+  funcao,
+  souEu,
+  podeEditar,
+}: {
+  userId: string;
+  nome: string;
+  funcao: "admin" | "operador" | "consulta";
+  souEu: boolean;
+  podeEditar: boolean;
+}) {
+  const router = useRouter();
+  const [valor, setValor] = useState(funcao);
+  const [erro, setErro] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+
+  async function trocar(nova: "admin" | "operador" | "consulta") {
+    const anterior = valor;
+    setValor(nova);
+    setSalvando(true);
+    setErro(null);
+    const r = await trocarFuncao(userId, nova);
+    setSalvando(false);
+    if (!r.ok) { setValor(anterior); setErro(r.erro ?? "Não foi possível alterar."); return; }
+    router.refresh();
+  }
+
+  return (
+    <li className="flex flex-wrap items-center gap-2 px-4 py-2.5 text-sm">
+      <span className="font-medium">{nome}</span>
+      {souEu && <span className="text-[11px] uppercase tracking-wide text-slate-400">você</span>}
+
+      {podeEditar && !souEu ? (
+        <select
+          value={valor}
+          disabled={salvando}
+          onChange={(e) => trocar(e.target.value as "admin" | "operador" | "consulta")}
+          className={`${inputCls} ml-auto max-w-[190px]`}
+        >
+          <option value="admin">Administrador</option>
+          <option value="operador">Operador</option>
+          <option value="consulta">Consulta</option>
+        </select>
+      ) : (
+        <span className="ml-auto rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+          {NOMES_DE_FUNCAO[valor]}
+        </span>
+      )}
+
+      <span className="w-full text-[11px] text-slate-400">{DESCRICAO_DA_FUNCAO[valor]}</span>
+      {erro && <span className="w-full text-xs text-red-600">{erro}</span>}
+    </li>
   );
 }

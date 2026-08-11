@@ -326,6 +326,15 @@ export async function criarConvite(fd: FormData): Promise<{ ok: boolean; erro?: 
   const papel = texto(fd, "papel") === "gestor" ? "gestor" : "empresario";
   const clienteId = texto(fd, "cliente_id");
   const gestorId = texto(fd, "gestor_id");
+  // Quem entra no BPO entra com uma funcao. Sem escolha explicita, o banco
+  // aplica "operador" -- a mais limitada das duas que trabalham.
+  const funcaoPedida = texto(fd, "funcao");
+  const funcao =
+    papel === "gestor" && ["admin", "operador", "consulta"].includes(funcaoPedida ?? "")
+      ? funcaoPedida
+      : papel === "gestor"
+        ? "operador"
+        : null;
 
   if (!email) return { ok: false, erro: "Informe o e-mail de quem vai receber o convite." };
   if (papel === "gestor" && !gestorId) return { ok: false, erro: "Selecione o gestor." };
@@ -339,6 +348,7 @@ export async function criarConvite(fd: FormData): Promise<{ ok: boolean; erro?: 
     token,
     email: email.toLowerCase(),
     papel,
+    funcao,
     gestor_id: papel === "gestor" ? gestorId : null,
     cliente_id: papel === "gestor" ? null : clienteId,
     criado_por: sessao.user?.id ?? null,
@@ -558,5 +568,26 @@ export async function alternarEmpresa(id: string, ativa: boolean): Promise<Resul
   const { error } = await supabase.from("empresas").update({ ativa }).eq("id", id);
   if (error) return { ok: false, erro: amigavel(error.message) };
   revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+
+/**
+ * Troca a funcao de alguem da equipe do BPO.
+ *
+ * Quem autoriza e o banco: a policy de `perfis` deixa o admin mexer em quem e
+ * da mesma carteira, e o trigger impede que a pessoa altere o proprio nivel ou
+ * mova alguem para outra carteira. Aqui so se traduz o erro para o usuario.
+ */
+export async function trocarFuncao(userId: string, funcao: "admin" | "operador" | "consulta"): Promise<Resultado> {
+  const supabase = await supabaseServer();
+  const { data: sessao } = await supabase.auth.getUser();
+  if (sessao.user?.id === userId) {
+    return { ok: false, erro: "Você não pode alterar o seu próprio nível de acesso." };
+  }
+
+  const { error } = await supabase.from("perfis").update({ funcao }).eq("user_id", userId);
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/carteira");
   return { ok: true };
 }

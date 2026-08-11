@@ -60,8 +60,8 @@ const uClienteA = await novoUsuario("dono@padaria.com");
 
 const gA = (await db.query(`insert into gestores (nome) values ('Mambix Assessoria') returning id`)).rows[0].id;
 const gB = (await db.query(`insert into gestores (nome) values ('Concorrente') returning id`)).rows[0].id;
-await db.exec(`update perfis set papel='gestor', gestor_id='${gA}' where user_id='${uGestorA}'`);
-await db.exec(`update perfis set papel='gestor', gestor_id='${gB}' where user_id='${uGestorB}'`);
+await db.exec(`update perfis set papel='gestor', funcao='admin', gestor_id='${gA}' where user_id='${uGestorA}'`);
+await db.exec(`update perfis set papel='gestor', funcao='admin', gestor_id='${gB}' where user_id='${uGestorB}'`);
 
 const cA = (await db.query(`insert into clientes (gestor_id,nome) values ('${gA}','Joao Silva') returning id`)).rows[0].id;
 const cB = (await db.query(`insert into clientes (gestor_id,nome) values ('${gB}','Cliente do B') returning id`)).rows[0].id;
@@ -78,7 +78,13 @@ async function como(uid, sql, params = []) {
   await db.exec(`set role authenticated`);
   await db.query(`select set_config('mambix.uid', $1, false)`, [uid]);
   try { return await db.query(sql, params); }
-  finally { await db.exec(`reset role`); }
+  finally {
+    // Limpa o uid tambem: sem isso, um db.exec direto depois desta chamada
+    // continuaria rodando "como" o ultimo usuario, e os triggers de protecao
+    // reagiriam a uma operacao que era para ser administrativa.
+    await db.query(`select set_config('mambix.uid', '', false)`);
+    await db.exec(`reset role`);
+  }
 }
 const tenta = async (uid, sql) => {
   try { await como(uid, sql); return null; } catch (e) { return e.message; }

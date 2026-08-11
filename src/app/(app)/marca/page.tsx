@@ -1,4 +1,4 @@
-import { meuPapel } from "@/lib/contexto";
+import { meuAcesso } from "@/lib/contexto";
 import { supabaseServer } from "@/lib/supabase-server";
 import { urlDaLogo, MARCA_PADRAO, type Marca } from "@/lib/marca";
 import { Cartao } from "@/components/ui";
@@ -13,7 +13,19 @@ import FormMarca, { type Alvo } from "./FormMarca";
  * fora disso leva recusa do banco, nao da interface.
  */
 export default async function PaginaMarca() {
-  const papel = await meuPapel();
+  const { papel, funcao } = await meuAcesso();
+
+  // Dentro de um BPO, identidade visual e assunto de administrador.
+  if (papel === "gestor" && funcao !== "admin") {
+    return (
+      <main className="p-6">
+        <h1 className="text-lg font-bold">Marca e cores</h1>
+        <p className="mt-2 text-sm text-slate-500">
+          A identidade visual é definida pelo administrador do seu BPO.
+        </p>
+      </main>
+    );
+  }
   const supabase = await supabaseServer();
 
   const [gestoresRes, clientesRes, empresasRes, marcasRes] = await Promise.all([

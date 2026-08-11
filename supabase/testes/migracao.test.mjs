@@ -142,7 +142,14 @@ titulo("FASE 4 — acesso preservado para quem já usava");
 async function como(uid, sql) {
   await db.exec(`set role authenticated`);
   await db.query(`select set_config('mambix.uid', $1, false)`, [uid]);
-  try { return await db.query(sql); } finally { await db.exec(`reset role`); }
+  try { return await db.query(sql); }
+  finally {
+    // Limpa o uid tambem: sem isso, um db.exec direto depois desta chamada
+    // continuaria rodando "como" o ultimo usuario, e os triggers de protecao
+    // reagiriam a uma operacao que era para ser administrativa.
+    await db.query(`select set_config('mambix.uid', '', false)`);
+    await db.exec(`reset role`);
+  }
 }
 const tenta = async (uid, sql) => {
   try { await como(uid, sql); return null; } catch (e) { return e.message; }
@@ -337,7 +344,7 @@ titulo("FASE 9 — isolamento nas baixas (dado financeiro entre carteiras)");
 const gB = (await db.query(`insert into gestores (nome) values ('Gestor Rival') returning id`)).rows[0].id;
 const uGestorB = (await db.query(
   `insert into auth.users (email) values ('rival@teste.com') returning id`)).rows[0].id;
-await db.exec(`update perfis set papel='gestor', gestor_id='${gB}' where user_id='${uGestorB}'`);
+await db.exec(`update perfis set papel='gestor', funcao='admin', gestor_id='${gB}' where user_id='${uGestorB}'`);
 
 r = await como(uGestorB, `select count(*) n from pagamento_baixas`);
 checa("Gestor de outra carteira não vê nenhuma baixa", Number(r.rows[0].n) === 0, `viu ${r.rows[0].n}`);

@@ -3,6 +3,12 @@ import { empresaDoCookie } from "@/lib/marca";
 
 export type Papel = "plataforma" | "gestor" | "empresario";
 
+/* Funcao dentro da carteira do BPO. So existe para papel "gestor".
+   admin  = dono do BPO: cadastra, convida, mexe na marca
+   operador = o dia a dia: lanca, edita, da baixa
+   consulta = so le */
+export type Funcao = "admin" | "operador" | "consulta";
+
 export type Contexto = {
   empresaId: string;
   empresaNome: string;
@@ -33,6 +39,44 @@ export async function meuPapel(): Promise<Papel> {
     .maybeSingle();
 
   return (data?.papel as Papel) ?? "empresario";
+}
+
+/**
+ * Papel e funcao numa consulta so.
+ *
+ * O mesmo aviso do meuPapel() vale aqui: o filtro por user_id nao e opcional.
+ * Quem tem papel "plataforma" enxerga todos os perfis, e sem o filtro o
+ * maybeSingle() recebe varias linhas e falha -- justamente para quem tem mais
+ * acesso.
+ */
+export async function meuAcesso(): Promise<{ papel: Papel; funcao: Funcao | null }> {
+  const supabase = await supabaseServer();
+  const { data: sessao } = await supabase.auth.getUser();
+  if (!sessao.user) return { papel: "empresario", funcao: null };
+
+  const { data } = await supabase
+    .from("perfis")
+    .select("papel, funcao")
+    .eq("user_id", sessao.user.id)
+    .maybeSingle();
+
+  return {
+    papel: (data?.papel as Papel) ?? "empresario",
+    funcao: (data?.funcao as Funcao | null) ?? null,
+  };
+}
+
+/* Quem manda na carteira: cadastra cliente e empresa, convida, mexe na marca.
+   Espelha administro_a_carteira() do banco -- aqui e so para a tela nao
+   oferecer o que vai ser recusado. A regra que vale e a do Postgres. */
+export async function souAdministrador(): Promise<boolean> {
+  const { papel, funcao } = await meuAcesso();
+  return papel === "plataforma" || (papel === "gestor" && funcao === "admin");
+}
+
+export async function possoGravar(): Promise<boolean> {
+  const { papel, funcao } = await meuAcesso();
+  return !(papel === "gestor" && funcao === "consulta");
 }
 
 export async function carregarContexto(sp: Record<string, string | string[] | undefined>): Promise<Contexto | null> {

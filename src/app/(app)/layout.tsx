@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const { data: perfil } = await supabase
     .from("perfis")
-    .select("nome, papel")
+    .select("nome, papel, funcao")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -48,7 +48,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {perfil?.papel === "plataforma"
               ? "Leads de Sucesso"
               : perfil?.papel === "gestor"
-                ? "BPO financeiro"
+                ? `BPO · ${
+                    perfil?.funcao === "admin"
+                      ? "administrador"
+                      : perfil?.funcao === "consulta"
+                        ? "consulta"
+                        : "operador"
+                  }`
                 : perfil?.papel === "empresario"
                   ? "Cliente"
                   : "sem perfil"}

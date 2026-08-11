@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
-import { meuPapel } from "@/lib/contexto";
+import { meuAcesso } from "@/lib/contexto";
 import { supabaseServer } from "@/lib/supabase-server";
 import { Cartao, Vazio } from "@/components/ui";
-import { FormGestor, FormCliente, FormEmpresa, FormConvite, BotaoRevogar, EmpresaChip } from "./Formularios";
+import { FormGestor, FormCliente, FormEmpresa, FormConvite, BotaoRevogar, EmpresaChip, LinhaDaEquipe } from "./Formularios";
 
 /**
  * Carteira: gestores, clientes, empresas e convites.
@@ -12,7 +12,7 @@ import { FormGestor, FormCliente, FormEmpresa, FormConvite, BotaoRevogar, Empres
  * sabe que existem outras.
  */
 export default async function Carteira() {
-  const papel = await meuPapel();
+  const { papel, funcao } = await meuAcesso();
 
   if (papel === "empresario") {
     return (
@@ -24,6 +24,9 @@ export default async function Carteira() {
   }
 
   const ehPlataforma = papel === "plataforma";
+  /* Espelha administro_a_carteira() do banco. Serve para a tela nao oferecer o
+     que o Postgres vai recusar -- a regra que vale continua sendo a de la. */
+  const souAdmin = ehPlataforma || funcao === "admin";
   const supabase = await supabaseServer();
   const h = await headers();
   const baseUrl = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? ""}`;
@@ -35,12 +38,19 @@ export default async function Carteira() {
     supabase.from("empresas").select("id, nome, cliente_id, ativa").order("nome"),
     supabase
       .from("convites")
-      .select("id, email, papel, cliente_id, gestor_id, expira_em")
+      .select("id, email, papel, funcao, cliente_id, gestor_id, expira_em")
       .is("aceito_em", null)
       .order("criado_em", { ascending: false }),
     // Filtrar por user_id e obrigatorio: a plataforma le todos os perfis.
     supabase.from("perfis").select("gestor_id").eq("user_id", sessao.user?.id ?? "").maybeSingle(),
   ]);
+
+  // Equipe do BPO: o RLS ja limita a quem e da mesma carteira.
+  const { data: equipe } = await supabase
+    .from("perfis")
+    .select("user_id, nome, papel, funcao, gestor_id")
+    .eq("papel", "gestor")
+    .order("nome");
 
   const gestores = gestoresRes.data ?? [];
   const clientes = clientesRes.data ?? [];
@@ -86,33 +96,64 @@ export default async function Carteira() {
         </Cartao>
       )}
 
-      <Cartao className="mb-6 p-4">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Novo cliente</p>
-        <FormCliente gestorId={ehPlataforma ? null : meuGestorId} gestores={gestores} />
-      </Cartao>
+      {souAdmin ? (
+        <>
+          <Cartao className="mb-6 p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Novo cliente</p>
+            <FormCliente gestorId={ehPlataforma ? null : meuGestorId} gestores={gestores} />
+          </Cartao>
 
-      <Cartao className="mb-6 p-4">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Nova empresa</p>
-        {clientes.length === 0 ? (
-          <p className="text-sm text-slate-500">Cadastre um cliente primeiro.</p>
-        ) : (
-          <FormEmpresa clientes={clientes} />
-        )}
-      </Cartao>
+          <Cartao className="mb-6 p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Nova empresa</p>
+            {clientes.length === 0 ? (
+              <p className="text-sm text-slate-500">Cadastre um cliente primeiro.</p>
+            ) : (
+              <FormEmpresa clientes={clientes} />
+            )}
+          </Cartao>
 
-      <Cartao className="mb-6 p-4">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Dar acesso</p>
-        {clientes.length === 0 && gestores.length === 0 ? (
-          <p className="text-sm text-slate-500">Cadastre um gestor ou cliente primeiro.</p>
-        ) : (
-          <FormConvite
-            clientes={clientes}
-            gestores={gestores}
-            podeConvidarGestor={ehPlataforma}
-            baseUrl={baseUrl}
-          />
-        )}
-      </Cartao>
+          <Cartao className="mb-6 p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Dar acesso</p>
+            {clientes.length === 0 && gestores.length === 0 ? (
+              <p className="text-sm text-slate-500">Cadastre um gestor ou cliente primeiro.</p>
+            ) : (
+              <FormConvite
+                clientes={clientes}
+                gestores={gestores}
+                podeConvidarGestor={ehPlataforma}
+                baseUrl={baseUrl}
+              />
+            )}
+          </Cartao>
+        </>
+      ) : (
+        <Cartao className="mb-6 p-4">
+          <p className="text-sm text-slate-500">
+            Cadastro de clientes, empresas e convites é do administrador do seu BPO. Você continua com acesso
+            normal aos lançamentos e relatórios.
+          </p>
+        </Cartao>
+      )}
+
+      {(equipe?.length ?? 0) > 0 && !ehPlataforma && (
+        <Cartao className="mb-6">
+          <p className="border-b border-slate-100 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Equipe
+          </p>
+          <ul className="divide-y divide-slate-100">
+            {(equipe ?? []).map((p) => (
+              <LinhaDaEquipe
+                key={p.user_id}
+                userId={p.user_id}
+                nome={p.nome ?? "sem nome"}
+                funcao={(p.funcao as "admin" | "operador" | "consulta") ?? "operador"}
+                souEu={p.user_id === sessao.user?.id}
+                podeEditar={souAdmin}
+              />
+            ))}
+          </ul>
+        </Cartao>
+      )}
 
       {convites.length > 0 && (
         <Cartao className="mb-6 p-4">
