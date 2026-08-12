@@ -251,6 +251,40 @@ checa("Gestor B nao consegue mexer no apelido de ninguem",
   (await db.query(`select apelido from gestores where id = '${gA}'`)).rows[0].apelido === "mambix",
   "apelido foi alterado por quem nao devia");
 
+
+// -------------------------------------------------- 8. a marca certa depois do login
+console.log("\n\x1b[1mFASE 8 - marca de quem acabou de entrar\x1b[0m");
+
+// Cliente final SEM empresa aberta: o vinculo dele passa pelo cliente, nao
+// pelo perfil -- era aqui que ele via a marca da plataforma.
+m = await marca(uClienteA, null);
+checa("Cliente final sem empresa aberta ve a marca do BPO dele",
+  m.cor_primaria === "#1F205A", `veio ${m.cor_primaria}`);
+checa("E o nome tambem desce do BPO", m.nome_exibido === "Mambix", `veio "${m.nome_exibido}"`);
+
+// Usuario do BPO sem empresa aberta (tela de carteira)
+m = await marca(uGestorA, null);
+checa("Funcionario do BPO sem empresa aberta ve a marca do BPO",
+  m.cor_primaria === "#1F205A", `veio ${m.cor_primaria}`);
+
+// Plataforma entrando pela porta de um consultor
+await db.exec(`update gestores set apelido = 'mambix' where id = '${gA}'`);
+let mp = (await como(uNeto, `select * from marca_efetiva(null, 'mambix')`)).rows[0];
+checa("Quem entra por /mambix ve a Mambix, mesmo sendo da plataforma",
+  mp.cor_primaria === "#1F205A", `veio ${mp.cor_primaria}`);
+
+mp = (await como(uNeto, `select * from marca_efetiva(null, null)`)).rows[0];
+checa("E sem porta nenhuma, a plataforma ve a plataforma",
+  mp.cor_primaria === "#047857", `veio ${mp.cor_primaria}`);
+
+mp = (await como(uNeto, `select * from marca_efetiva(null, 'nao-existe')`)).rows[0];
+checa("Porta inexistente nao inventa marca", mp.cor_primaria === "#047857", `veio ${mp.cor_primaria}`);
+
+// A empresa aberta continua mandando mais que a porta
+mp = (await como(uGestorA, `select * from marca_efetiva('${eA2}', 'mambix')`)).rows[0];
+checa("Empresa aberta tem precedencia sobre a porta de entrada",
+  mp.logo_url === `gestor/${gA}/logo.png`, `veio ${mp.logo_url}`);
+
 // -------------------------------------------------- fim
 console.log("");
 if (falhas === 0) console.log("\x1b[32m\x1b[1mTODOS OS TESTES DE MARCA PASSARAM\x1b[0m");

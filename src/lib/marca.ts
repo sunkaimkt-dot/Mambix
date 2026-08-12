@@ -49,9 +49,15 @@ export const carregarMarca = cache(async function carregarMarca(
   ignorarCookie = false,
 ): Promise<Marca> {
   const alvo = empresaId ?? (ignorarCookie ? null : await empresaDoCookie());
+  // A porta de entrada entra como ultimo criterio: so vale quando nada mais
+  // identifica de qual BPO a pessoa e. Ver comentario da migration 0011.
+  const consultor = ignorarCookie ? null : await consultorDoCookie();
   try {
     const supabase = await supabaseServer();
-    const { data, error } = await supabase.rpc("marca_efetiva", { p_empresa: alvo });
+    const { data, error } = await supabase.rpc("marca_efetiva", {
+      p_empresa: alvo,
+      p_consultor: consultor,
+    });
     if (error) return MARCA_PADRAO;
     const m = (Array.isArray(data) ? data[0] : data) as Partial<Marca> | null;
     if (!m) return MARCA_PADRAO;
