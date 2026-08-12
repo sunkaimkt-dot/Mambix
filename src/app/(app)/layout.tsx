@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { supabaseServer } from "@/lib/supabase-server";
-import { carregarMarca, urlDaLogo, MARCA_PADRAO } from "@/lib/marca";
+import { carregarMarca, urlDaLogo, MARCA_PADRAO, portaDeEntrada } from "@/lib/marca";
 import Navegacao from "@/components/Navegacao";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -9,7 +9,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // Sessao expirada volta pela porta por onde a pessoa entrou -- o cliente da
+  // Mambix nao deve cair na tela da Nortex.
+  if (!user) redirect(await portaDeEntrada());
 
   const { data: perfil } = await supabase
     .from("perfis")

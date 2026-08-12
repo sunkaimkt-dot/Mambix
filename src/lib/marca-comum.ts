@@ -35,6 +35,10 @@ export const MARCA_PADRAO: Marca = {
    URL, o sistema voltava para a primeira empresa da lista. */
 export const COOKIE_EMPRESA = "empresa_ativa";
 
+/* Lembra por qual consultor a pessoa entrou, para a sessao expirada devolver
+   ela para /mambix em vez da porta da Nortex. */
+export const COOKIE_CONSULTOR = "consultor";
+
 /* O banco so aceita #RRGGBB (constraint cores_hexadecimais), mas estes valores
    entram direto num atributo style: confere-se de novo antes de injetar. */
 const HEX = /^#[0-9A-Fa-f]{6}$/;

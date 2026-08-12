@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { portaDeEntrada } from "@/lib/marca";
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase-server";
 import AceitarConvite from "./AceitarConvite";
@@ -15,7 +16,7 @@ export default async function Convite({ params }: { params: Promise<{ token: str
   const { data: sessao } = await supabase.auth.getUser();
 
   if (!sessao.user) {
-    redirect(`/login?proximo=${encodeURIComponent(`/convite/${token}`)}`);
+    redirect(`${await portaDeEntrada()}?proximo=${encodeURIComponent(`/convite/${token}`)}`);
   }
 
   return (

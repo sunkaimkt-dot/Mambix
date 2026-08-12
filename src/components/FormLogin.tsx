@@ -2,8 +2,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-client";
+import { COOKIE_CONSULTOR } from "@/lib/marca-comum";
 
-export default function FormLogin() {
+/**
+ * @param consultor apelido de quem "dono" da porta por onde a pessoa entrou.
+ *   Fica gravado em cookie para que a proxima visita -- e a sessao que expirar
+ *   -- caiam na tela do consultor certo, e nao na porta da plataforma.
+ */
+export default function FormLogin({ consultor }: { consultor?: string }) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -14,6 +20,9 @@ export default function FormLogin() {
     e.preventDefault();
     setErro(null);
     setCarregando(true);
+    if (consultor) {
+      document.cookie = `${COOKIE_CONSULTOR}=${consultor}; path=/; max-age=31536000; samesite=lax`;
+    }
     const supabase = supabaseBrowser();
     const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
     setCarregando(false);

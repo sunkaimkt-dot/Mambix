@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase-server";
 import { urlDaLogo, variaveisDaMarca, MARCA_PADRAO, type Marca } from "@/lib/marca";
-import FormLogin from "../login/FormLogin";
+import FormLogin from "@/components/FormLogin";
 
 /**
  * Porta de entrada do consultor:  nortex.app/mambix
@@ -55,7 +55,7 @@ export default async function EntradaDoConsultor({
           <h1 className="mb-1 text-2xl font-bold tracking-tight">{marca.nome_exibido}</h1>
         )}
         {marca.tagline && <p className="mb-6 text-sm text-slate-500">{marca.tagline}</p>}
-        <FormLogin />
+        <FormLogin consultor={consultor.toLowerCase()} />
       </div>
     </main>
   );
