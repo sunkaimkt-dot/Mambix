@@ -20,9 +20,12 @@ export default function FormLogin({ consultor }: { consultor?: string }) {
     e.preventDefault();
     setErro(null);
     setCarregando(true);
-    if (consultor) {
-      document.cookie = `${COOKIE_CONSULTOR}=${consultor}; path=/; max-age=31536000; samesite=lax`;
-    }
+    /* A porta de AGORA manda. Entrar por /admin apaga a lembranca de qualquer
+       consultor -- senao quem entrasse uma vez por /mambix veria a marca dela
+       para sempre, inclusive na porta da plataforma. */
+    document.cookie = consultor
+      ? `${COOKIE_CONSULTOR}=${consultor}; path=/; max-age=31536000; samesite=lax`
+      : `${COOKIE_CONSULTOR}=; path=/; max-age=0; samesite=lax`;
     const supabase = supabaseBrowser();
     const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
     setCarregando(false);

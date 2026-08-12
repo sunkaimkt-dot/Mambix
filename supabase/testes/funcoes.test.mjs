@@ -178,6 +178,37 @@ checa("Admin de um BPO nao mexe em quem e do outro",
   (await tenta(uOutroBpo, `update perfis set funcao='consulta' where user_id='${uOperador}'`)) !== null ||
   (await db.query(`select funcao from perfis where user_id='${uOperador}'`)).rows[0].funcao === "operador");
 
+
+// -------------------------------------------------- 6. convite antes do login
+console.log("\n\x1b[1mFASE 6 - o que o convite mostra antes do login\x1b[0m");
+// A marca do gestor A ja foi criada na fase 3 (o admin mexeu nela).
+await db.exec(`update marcas set nome_exibido = 'Mambix', cor_primaria = '#1F205A' where gestor_id = '${gA}'`);
+await db.exec(`insert into convites (token,email,papel,funcao,gestor_id)
+               values ('conv-1','novo@mambix.com.br','gestor','operador','${gA}')`);
+
+const publico = async (tok) =>
+  (await db.query(`select * from convite_publico($1)`, [tok])).rows[0];
+
+let c = await publico("conv-1");
+checa("Convite valido se identifica", c.valido === true);
+checa("Diz que tipo de acesso e", c.papel === "gestor" && c.funcao === "operador",
+  `veio ${c.papel}/${c.funcao}`);
+checa("Traz a marca de quem convidou", c.nome_exibido === "Mambix" && c.cor_primaria === "#1F205A",
+  `veio ${c.nome_exibido}/${c.cor_primaria}`);
+checa("NAO entrega o e-mail de quem foi convidado", !("email" in c), Object.keys(c).join(","));
+
+c = await publico("token-que-nao-existe");
+checa("Token inexistente nao vale", c.valido === false);
+checa("E nao vaza marca nenhuma", c.nome_exibido === null || c.nome_exibido === undefined,
+  `veio ${c.nome_exibido}`);
+
+await db.exec(`update convites set expira_em = now() - interval '1 day' where token = 'conv-1'`);
+checa("Convite vencido deixa de valer", (await publico("conv-1")).valido === false);
+await db.exec(`update convites set expira_em = now() + interval '7 days' where token = 'conv-1'`);
+
+await db.exec(`update convites set aceito_em = now() where token = 'conv-1'`);
+checa("Convite ja usado deixa de valer", (await publico("conv-1")).valido === false);
+
 console.log("");
 if (falhas === 0) console.log("\x1b[32m\x1b[1mTODOS OS TESTES DE FUNCAO PASSARAM\x1b[0m");
 else { console.log(`\x1b[31m\x1b[1m${falhas} TESTE(S) FALHARAM\x1b[0m`); process.exit(1); }
