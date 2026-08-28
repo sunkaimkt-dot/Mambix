@@ -17,11 +17,10 @@ export default async function Pagamentos({
   if (!ctx) return <main className="p-6"><p className="text-sm text-slate-500">Cadastre uma empresa primeiro.</p></main>;
 
   const supabase = await supabaseServer();
-  const [codigosRes, formasRes, bancosRes, familiaRes, listaRes] = await Promise.all([
+  const [codigosRes, formasRes, bancosRes, listaRes] = await Promise.all([
     supabase.from("codigos_despesa").select("codigo, nome, grupo").eq("empresa_id", ctx.empresaId).order("codigo"),
     supabase.from("formas_pagamento").select("codigo, nome").eq("empresa_id", ctx.empresaId).order("codigo"),
     supabase.from("bancos").select("id, nome").eq("empresa_id", ctx.empresaId).eq("ativo", true).order("nome"),
-    supabase.from("codigos_familia").select("codigo, nome").eq("empresa_id", ctx.empresaId).order("codigo"),
     supabase
       .from("pagamentos_saldo")
       .select("id, vencimento, cfc, cd, descricao, valor, pago, cp, comp_mes, comp_ano, loja_id, banco_id, total_pago, saldo")
@@ -74,7 +73,6 @@ export default async function Pagamentos({
           bancos={bancosRes.data ?? []}
           codigos={codigos}
           formas={(formasRes.data ?? []).filter((f) => f.nome !== "")}
-          familia={(familiaRes.data ?? []).filter((f) => f.nome !== "")}
           mes={ctx.mes}
           ano={ctx.ano}
         />

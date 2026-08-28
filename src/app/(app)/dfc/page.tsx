@@ -6,6 +6,7 @@ import FiltroRelatorio from "@/components/FiltroRelatorio";
 import TabelaCodigos from "@/components/TabelaCodigos";
 import { Cartao } from "@/components/ui";
 import { brl, MESES, CFC } from "@/lib/formato";
+import Link from "next/link";
 
 export default async function DFC({
   searchParams,
@@ -52,7 +53,11 @@ export default async function DFC({
             <tbody className="divide-y divide-slate-100">
               {d.porTipoRecebimento.map((t) => (
                 <tr key={t.codigo} className={t.valor ? "" : "text-slate-300"}>
-                  <td className="py-1">{t.nome}</td>
+                  <td className="py-1">
+                    <Link href={`/evolucao-tipo/recebimento/${t.codigo}${qs ? `?${qs}` : ""}`} className="hover:underline">
+                      {t.nome}
+                    </Link>
+                  </td>
                   <td className="py-1 text-right tabular-nums">{brl(t.valor)}</td>
                 </tr>
               ))}
@@ -67,12 +72,20 @@ export default async function DFC({
           </div>
           <table className="w-full text-sm">
             <tbody className="divide-y divide-slate-100">
-              {d.grupos.map((g) => (
-                <tr key={g.chave} className={g.total ? "" : "text-slate-300"}>
-                  <td className="py-1">{g.rotulo}</td>
-                  <td className="py-1 text-right tabular-nums">{brl(g.total)}</td>
-                </tr>
-              ))}
+              {d.grupos.map((g) => {
+                const qsGrupo = new URLSearchParams(qs);
+                qsGrupo.set("regime", "caixa");
+                return (
+                  <tr key={g.chave} className={g.total ? "" : "text-slate-300"}>
+                    <td className="py-1">
+                      <Link href={`/evolucao-grupo/${g.chave}?${qsGrupo.toString()}`} className="hover:underline">
+                        {g.rotulo}
+                      </Link>
+                    </td>
+                    <td className="py-1 text-right tabular-nums">{brl(g.total)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </Cartao>

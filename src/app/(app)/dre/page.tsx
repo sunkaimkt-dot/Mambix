@@ -64,7 +64,11 @@ export default async function DRE({
             <tbody className="divide-y divide-slate-100">
               {d.porTipoVenda.map((t) => (
                 <tr key={t.codigo} className={t.valor ? "" : "text-slate-300"}>
-                  <td className="py-1">{t.nome}</td>
+                  <td className="py-1">
+                    <Link href={`/evolucao-tipo/venda/${t.codigo}${qs ? `?${qs}` : ""}`} className="hover:underline">
+                      {t.nome}
+                    </Link>
+                  </td>
                   <td className="py-1 text-right tabular-nums">{brl(t.valor)}</td>
                   <td className="w-16 py-1 text-right tabular-nums">{base ? pct(t.valor / base) : "—"}</td>
                 </tr>
@@ -82,7 +86,11 @@ export default async function DRE({
             <tbody className="divide-y divide-slate-100">
               {d.grupos.map((g) => (
                 <tr key={g.chave} className={g.total ? "" : "text-slate-300"}>
-                  <td className="py-1">{g.rotulo}</td>
+                  <td className="py-1">
+                    <Link href={`/evolucao-grupo/${g.chave}${qs ? `?${qs}` : ""}`} className="hover:underline">
+                      {g.rotulo}
+                    </Link>
+                  </td>
                   <td className="py-1 text-right tabular-nums">{brl(g.total)}</td>
                   <td className="w-16 py-1 text-right tabular-nums">{base ? pct(g.total / base) : "—"}</td>
                 </tr>

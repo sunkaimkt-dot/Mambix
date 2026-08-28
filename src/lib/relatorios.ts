@@ -2,6 +2,8 @@ import { supabaseServer } from "@/lib/supabase-server";
 import { primeiroDia, ultimoDia } from "@/lib/contexto";
 import { GRUPOS_DRE, GRUPOS_DFC_EXTRA, brl } from "@/lib/formato";
 
+const TODOS_GRUPOS = [...GRUPOS_DRE, ...GRUPOS_DFC_EXTRA];
+
 export type LinhaCodigo = { codigo: number; nome: string; valor: number };
 export type Grupo = { chave: string; rotulo: string; de: number; ate: number; total: number };
 
@@ -362,4 +364,112 @@ export async function serieAnualCodigo(
   }
 
   return { codigo, nome: cod?.nome ?? "", regime, ano, meses };
+}
+
+export type SerieAnualGrupo = {
+  chave: string;
+  rotulo: string;
+  regime: "competencia" | "caixa";
+  ano: number;
+  meses: number[]; // 12 posicoes, janeiro a dezembro
+};
+
+/**
+ * Evolucao de 12 meses de um GRUPO de despesas (a mesma faixa de codigos que
+ * aparece em "Despesas por grupo" na DRE e "Saidas por grupo" no DFC).
+ * Mesma logica da serieAnualCodigo, so trocando "cd = codigo" por
+ * "cd between de and ate".
+ */
+export async function serieAnualGrupo(
+  empresaId: string,
+  chave: string,
+  ano: number,
+  regime: "competencia" | "caixa",
+  lojaId: string | null
+): Promise<SerieAnualGrupo> {
+  const supabase = await supabaseServer();
+  const meses = Array(12).fill(0) as number[];
+  const grupo = TODOS_GRUPOS.find((g) => g.chave === chave);
+  if (!grupo) return { chave, rotulo: chave, regime, ano, meses };
+
+  if (regime === "competencia") {
+    let q = supabase
+      .from("pagamentos")
+      .select("comp_mes, valor, cd, loja_id")
+      .eq("empresa_id", empresaId)
+      .eq("comp_ano", ano)
+      .gte("cd", grupo.de)
+      .lte("cd", grupo.ate);
+    if (lojaId) q = q.eq("loja_id", lojaId);
+    const { data } = await q;
+    for (const p of data ?? []) meses[p.comp_mes - 1] += Number(p.valor);
+  } else {
+    const { data } = await supabase
+      .from("pagamento_baixas")
+      .select("data_pagamento, valor, pagamentos!inner(cd, loja_id)")
+      .eq("empresa_id", empresaId)
+      .gte("pagamentos.cd", grupo.de)
+      .lte("pagamentos.cd", grupo.ate)
+      .gte("data_pagamento", `${ano}-01-01`)
+      .lte("data_pagamento", `${ano}-12-31`);
+
+    type Linha = { data_pagamento: string; valor: number; pagamentos: { loja_id: string | null } | null };
+    for (const b of (data ?? []) as unknown as Linha[]) {
+      if (lojaId && b.pagamentos?.loja_id !== lojaId) continue;
+      meses[Number(b.data_pagamento.slice(5, 7)) - 1] += Number(b.valor);
+    }
+  }
+
+  return { chave, rotulo: grupo.rotulo, regime, ano, meses };
+}
+
+export type SerieAnualTipo = {
+  codigo: number;
+  nome: string;
+  fonte: "venda" | "recebimento";
+  ano: number;
+  meses: number[]; // 12 posicoes, janeiro a dezembro
+};
+
+/**
+ * Evolucao de 12 meses de uma forma de entrada de dinheiro: tipo de venda
+ * (faturamento, na DRE -- tabela caixa_diario) ou tipo de recebimento
+ * (entradas de caixa, no DFC -- tabela receitas). As duas tem o mesmo
+ * formato -- codigo, nome, data, valor -- so a tabela de origem muda.
+ */
+export async function serieAnualTipo(
+  empresaId: string,
+  fonte: "venda" | "recebimento",
+  codigo: number,
+  ano: number,
+  lojaId: string | null
+): Promise<SerieAnualTipo> {
+  const supabase = await supabaseServer();
+  const meses = Array(12).fill(0) as number[];
+
+  const tabela = fonte === "venda" ? "caixa_diario" : "receitas";
+  const colunaTipo = fonte === "venda" ? "tipo_venda" : "tipo_recebimento";
+  const tabelaTipos = fonte === "venda" ? "tipos_venda" : "tipos_recebimento";
+
+  const [{ data: tipo }, dadosRes] = await Promise.all([
+    supabase.from(tabelaTipos).select("nome").eq("empresa_id", empresaId).eq("codigo", codigo).maybeSingle(),
+    (() => {
+      let q = supabase
+        .from(tabela)
+        .select(`data, valor, ${colunaTipo}, loja_id`)
+        .eq("empresa_id", empresaId)
+        .eq(colunaTipo, codigo)
+        .gte("data", `${ano}-01-01`)
+        .lte("data", `${ano}-12-31`);
+      if (lojaId) q = q.eq("loja_id", lojaId);
+      return q;
+    })(),
+  ]);
+
+  type Linha = { data: string; valor: number };
+  for (const r of (dadosRes.data ?? []) as unknown as Linha[]) {
+    meses[Number(r.data.slice(5, 7)) - 1] += Number(r.valor);
+  }
+
+  return { codigo, nome: tipo?.nome ?? "", fonte, ano, meses };
 }

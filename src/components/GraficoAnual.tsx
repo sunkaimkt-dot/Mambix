@@ -1,12 +1,17 @@
 import { brl, MESES_CURTO } from "@/lib/formato";
-import type { SerieAnual } from "@/lib/relatorios";
+
+type SerieGrafico = {
+  ano: number;
+  meses: number[]; // 12 posicoes, janeiro a dezembro
+  titulo?: string; // usado no rotulo de acessibilidade e no texto de "sem valores"
+};
 
 /**
- * Evolucao de 12 meses de um codigo, em SVG puro.
+ * Evolucao de 12 meses (de um codigo, grupo ou tipo), em SVG puro.
  * Sem biblioteca de grafico de proposito: sao 12 barras, nao compensa carregar
  * 80 kB de JavaScript no cliente para desenhar isso.
  */
-export default function GraficoAnual({ serie }: { serie: SerieAnual }) {
+export default function GraficoAnual({ serie }: { serie: SerieGrafico }) {
   const { meses } = serie;
   const maximo = Math.max(...meses, 0);
   const mesesComValor = meses.filter((v) => v > 0);
@@ -33,7 +38,7 @@ export default function GraficoAnual({ serie }: { serie: SerieAnual }) {
   if (total === 0) {
     return (
       <p className="px-4 py-10 text-center text-sm text-slate-500">
-        Nenhum valor lançado neste código em {serie.ano}.
+        Nenhum valor lançado{serie.titulo ? ` em ${serie.titulo}` : ""} em {serie.ano}.
       </p>
     );
   }
@@ -41,7 +46,7 @@ export default function GraficoAnual({ serie }: { serie: SerieAnual }) {
   return (
     <div>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img"
-           aria-label={`Evolução mensal do código ${serie.codigo} em ${serie.ano}`}>
+           aria-label={`Evolução mensal${serie.titulo ? ` de ${serie.titulo}` : ""} em ${serie.ano}`}>
         {referencias.map((v, i) => (
           <g key={i}>
             <line x1={L} y1={y(v)} x2={W - R} y2={y(v)} stroke="#e2e8f0" strokeWidth="1" />

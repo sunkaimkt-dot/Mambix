@@ -13,7 +13,6 @@ export default function FormPagamento({
   bancos,
   codigos,
   formas,
-  familia,
   mes,
   ano,
 }: {
@@ -22,7 +21,6 @@ export default function FormPagamento({
   bancos: { id: string; nome: string }[];
   codigos: Opt[];
   formas: Opt[];
-  familia: Opt[];
   mes: number;
   ano: number;
 }) {
@@ -32,6 +30,22 @@ export default function FormPagamento({
   const [salvando, setSalvando] = useState(false);
   const [jaPago, setJaPago] = useState(false);
   const hoje = `${ano}-${String(mes).padStart(2, "0")}-${String(new Date().getDate()).padStart(2, "0")}`;
+
+  // Competencia comeca alinhada ao mes/ano selecionado no topo da tela, mas
+  // segue a data de vencimento a partir do momento em que o usuario mexe nela --
+  // ele nao precisa mais trocar o seletor de cima toda vez que lanca uma conta
+  // de outro mes, so escolher a data certa.
+  const [compMes, setCompMes] = useState(mes);
+  const [compAno, setCompAno] = useState(ano);
+
+  function aoMudarVencimento(valor: string) {
+    // input type="date" entrega AAAA-MM-DD; extrai o mes/ano direto da string
+    // para nao cair em fuso horario ao converter para Date.
+    const m = valor.match(/^(\d{4})-(\d{2})-\d{2}$/);
+    if (!m) return;
+    setCompAno(Number(m[1]));
+    setCompMes(Number(m[2]));
+  }
 
   return (
     <form
@@ -44,17 +58,26 @@ export default function FormPagamento({
         if (r.ok) {
           ref.current?.reset();
           setJaPago(false);
+          setCompMes(mes);
+          setCompAno(ano);
           router.refresh();
         } else setErro(r.erro ?? "Não foi possível salvar.");
       }}
       className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-12"
     >
       <input type="hidden" name="empresa_id" value={empresaId} />
-      <input type="hidden" name="comp_mes" value={mes} />
-      <input type="hidden" name="comp_ano" value={ano} />
+      <input type="hidden" name="comp_mes" value={compMes} />
+      <input type="hidden" name="comp_ano" value={compAno} />
 
       <Campo rotulo="Vencimento" className="xl:col-span-1">
-        <input type="date" name="vencimento" required defaultValue={hoje} className={inputCls} />
+        <input
+          type="date"
+          name="vencimento"
+          required
+          defaultValue={hoje}
+          onChange={(e) => aoMudarVencimento(e.target.value)}
+          className={inputCls}
+        />
       </Campo>
 
       <Campo rotulo="CFC" className="xl:col-span-1">
@@ -110,15 +133,6 @@ export default function FormPagamento({
         </select>
       </Campo>
 
-      <Campo rotulo="Casa (opcional)" className="xl:col-span-1">
-        <select name="cod_familia" className={inputCls} defaultValue="">
-          <option value="">—</option>
-          {familia.map((f) => (
-            <option key={f.codigo} value={f.codigo}>{f.codigo} - {f.nome || "(sem nome)"}</option>
-          ))}
-        </select>
-      </Campo>
-
       <div className="col-span-2 flex flex-wrap items-end gap-3 xl:col-span-12">
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -139,7 +153,7 @@ export default function FormPagamento({
         )}
 
         <span className="text-xs text-slate-400">
-          Competência: {MESES[mes - 1]}/{ano} — muda no seletor acima se a conta for de outro mês.
+          Competência: {MESES[compMes - 1]}/{compAno} — segue a data de vencimento, ajuste ali se a conta for de outro mês.
         </span>
         <button
           disabled={salvando}
