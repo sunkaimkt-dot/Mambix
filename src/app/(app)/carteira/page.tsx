@@ -2,7 +2,10 @@ import { headers } from "next/headers";
 import { meuAcesso } from "@/lib/contexto";
 import { supabaseServer } from "@/lib/supabase-server";
 import { Cartao, Vazio } from "@/components/ui";
-import { FormGestor, FormCliente, FormEmpresa, FormConvite, BotaoRevogar, EmpresaChip, LinhaDaEquipe } from "./Formularios";
+import {
+  FormGestor, FormClienteCompleto, FormCliente, FormEmpresa, FormConvite,
+  BotaoRevogar, EmpresaChip, LinhaDaEquipe,
+} from "./Formularios";
 
 /**
  * Carteira: gestores, clientes, empresas e convites.
@@ -100,31 +103,50 @@ export default async function Carteira() {
         <>
           <Cartao className="mb-6 p-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Novo cliente</p>
-            <FormCliente gestorId={ehPlataforma ? null : meuGestorId} gestores={gestores} />
+            <FormClienteCompleto gestorId={ehPlataforma ? null : meuGestorId} gestores={gestores} />
           </Cartao>
 
-          <Cartao className="mb-6 p-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Nova empresa</p>
-            {clientes.length === 0 ? (
-              <p className="text-sm text-slate-500">Cadastre um cliente primeiro.</p>
-            ) : (
-              <FormEmpresa clientes={clientes} />
-            )}
-          </Cartao>
+          <details className="group mb-6 rounded-xl border border-slate-200 bg-white open:pb-4">
+            <summary className="cursor-pointer select-none px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-700">
+              Mais opções — cliente com mais de uma empresa, reenviar acesso, ou convidar outro BPO
+            </summary>
 
-          <Cartao className="mb-6 p-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Dar acesso</p>
-            {clientes.length === 0 && gestores.length === 0 ? (
-              <p className="text-sm text-slate-500">Cadastre um BPO ou cliente primeiro.</p>
-            ) : (
-              <FormConvite
-                clientes={clientes}
-                gestores={gestores}
-                podeConvidarGestor={ehPlataforma}
-                baseUrl={baseUrl}
-              />
-            )}
-          </Cartao>
+            <div className="space-y-6 px-4 pt-1">
+              <div>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Mais uma empresa (mesmo cliente já tem CNPJ cadastrado)
+                </p>
+                {clientes.length === 0 ? (
+                  <p className="text-sm text-slate-500">Cadastre um cliente primeiro.</p>
+                ) : (
+                  <FormEmpresa clientes={clientes} />
+                )}
+              </div>
+
+              <div>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Reenviar acesso ou convidar {ehPlataforma ? "outro BPO" : "outra pessoa"}
+                </p>
+                {clientes.length === 0 && gestores.length === 0 ? (
+                  <p className="text-sm text-slate-500">Cadastre um BPO ou cliente primeiro.</p>
+                ) : (
+                  <FormConvite
+                    clientes={clientes}
+                    gestores={gestores}
+                    podeConvidarGestor={ehPlataforma}
+                    baseUrl={baseUrl}
+                  />
+                )}
+              </div>
+
+              <div>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Cliente sem empresa ainda
+                </p>
+                <FormCliente gestorId={ehPlataforma ? null : meuGestorId} gestores={gestores} />
+              </div>
+            </div>
+          </details>
         </>
       ) : (
         <Cartao className="mb-6 p-4">

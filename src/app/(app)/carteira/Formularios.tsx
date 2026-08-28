@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import {
-  salvarGestor, salvarCliente, salvarEmpresa, criarConvite, revogarConvite,
+  salvarGestor, salvarCliente, salvarClienteCompleto, salvarEmpresa, criarConvite, revogarConvite,
   renomearEmpresa, alternarEmpresa, trocarFuncao,
 } from "@/lib/acoes";
 import { inputCls } from "@/components/ui";
@@ -35,6 +35,100 @@ export function FormGestor() {
       </span>
       {erro && <span className="text-sm text-red-600">{erro}</span>}
     </form>
+  );
+}
+
+/**
+ * Cadastro de cliente novo em um passo so: nome do cliente, nome/CNPJ da
+ * empresa (matriz) e o e-mail de quem vai acessar. De um clique so cria o
+ * cliente, a empresa e o convite, e ja mostra o link pronto pra copiar.
+ *
+ * Cobre o caso comum -- cliente com uma empresa so. Quem precisa de mais de
+ * uma empresa no mesmo cliente, ou reconvidar/trocar o e-mail depois, usa os
+ * formularios "Mais uma empresa" e "Dar acesso" logo abaixo.
+ */
+export function FormClienteCompleto({ gestorId, gestores }: { gestorId: string | null; gestores: Item[] }) {
+  const router = useRouter();
+  const ref = useRef<HTMLFormElement>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [link, setLink] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState(false);
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+
+  const escolheCarteira = gestorId === null;
+  if (escolheCarteira && gestores.length === 0) {
+    return <p className="text-sm text-slate-500">Cadastre um gestor primeiro.</p>;
+  }
+
+  return (
+    <div>
+      <form
+        ref={ref}
+        action={async (fd) => {
+          setErro(null);
+          setLink(null);
+          setCopiado(false);
+          const r = await salvarClienteCompleto(fd);
+          if (r.ok && r.token) {
+            setLink(`${baseUrl}/convite/${r.token}`);
+            ref.current?.reset();
+            router.refresh();
+          } else setErro(r.erro ?? "Não foi possível salvar.");
+        }}
+        className="flex flex-wrap items-end gap-2"
+      >
+        {escolheCarteira ? (
+          <select name="gestor_id" required className={`${inputCls} max-w-xs`} defaultValue="">
+            <option value="" disabled>Carteira de…</option>
+            {gestores.map((g) => (
+              <option key={g.id} value={g.id}>{g.nome}</option>
+            ))}
+          </select>
+        ) : (
+          <input type="hidden" name="gestor_id" value={gestorId} />
+        )}
+        <input name="nome_cliente" required placeholder="Nome do cliente" className={`${inputCls} max-w-xs`} />
+        <input name="nome_empresa" required placeholder="Nome da empresa (CNPJ)" className={`${inputCls} max-w-xs`} />
+        <input
+          name="email"
+          type="email"
+          required
+          placeholder="e-mail de quem vai acessar"
+          className={`${inputCls} max-w-xs`}
+        />
+        <button className="rounded-lg bg-marca px-4 py-1.5 text-sm font-semibold text-white hover:bg-marca-escura">
+          Cadastrar cliente
+        </button>
+        {erro && <span className="text-sm text-red-600">{erro}</span>}
+      </form>
+      <p className="mt-2 text-xs text-slate-400">
+        Já nasce com os 100 códigos e a loja matriz, e o convite de acesso pronto pra enviar.
+      </p>
+
+      {link && (
+        <div className="mt-3 rounded-lg border border-marca-clara bg-marca-clara p-3">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-marca-escura">
+            Cliente cadastrado — envie este link de acesso
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <code className="break-all rounded bg-white px-2 py-1 text-xs text-slate-700">{link}</code>
+            <button
+              type="button"
+              onClick={() => {
+                void navigator.clipboard.writeText(link);
+                setCopiado(true);
+              }}
+              className="rounded-lg bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            >
+              {copiado ? "Copiado" : "Copiar"}
+            </button>
+          </div>
+          <p className="mt-1.5 text-[11px] text-marca-escura">
+            Vale 7 dias e só funciona para esse e-mail. Quem se cadastrar sem convite não vê nada.
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
 

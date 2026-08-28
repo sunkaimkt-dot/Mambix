@@ -299,6 +299,84 @@ export async function salvarCliente(fd: FormData): Promise<Resultado> {
   return { ok: true };
 }
 
+/**
+ * Cadastro de cliente novo em um passo so: cliente + empresa (a matriz) +
+ * convite de acesso, tudo de uma vez. Existe porque o caso comum e 1 cliente
+ * = 1 empresa, e antes disso era 3 formularios separados escolhendo o mesmo
+ * cliente de novo em cada um -- confuso pra quem nao e do sistema no dia a dia.
+ *
+ * Se algum passo falhar no meio, desfaz o que ja foi criado (nao ha
+ * transacao entre chamadas separadas ao Supabase), pra nao deixar cliente ou
+ * empresa orfaos sem convite.
+ */
+export async function salvarClienteCompleto(
+  fd: FormData
+): Promise<{ ok: boolean; erro?: string; token?: string }> {
+  const nomeCliente = texto(fd, "nome_cliente");
+  const nomeEmpresa = texto(fd, "nome_empresa");
+  const email = texto(fd, "email");
+  if (!nomeCliente) return { ok: false, erro: "Informe o nome do cliente." };
+  if (!nomeEmpresa) return { ok: false, erro: "Informe o nome (ou CNPJ) da empresa." };
+  if (!email) return { ok: false, erro: "Informe o e-mail de acesso do cliente." };
+
+  const supabase = await supabaseServer();
+  const { data: sessao } = await supabase.auth.getUser();
+  const { data: perfil } = await supabase
+    .from("perfis")
+    .select("gestor_id, papel")
+    .eq("user_id", sessao.user?.id ?? "")
+    .maybeSingle();
+
+  // A plataforma escolhe a carteira; o gestor so cria dentro da propria.
+  const gestorId = perfil?.papel === "plataforma" ? texto(fd, "gestor_id") : perfil?.gestor_id;
+  if (!gestorId) {
+    return {
+      ok: false,
+      erro:
+        perfil?.papel === "plataforma"
+          ? "Selecione de qual BPO é este cliente."
+          : "Sua conta não está vinculada a nenhuma carteira.",
+    };
+  }
+
+  const { data: cliente, error: erroCliente } = await supabase
+    .from("clientes")
+    .insert({ gestor_id: gestorId, nome: nomeCliente })
+    .select("id")
+    .single();
+  if (erroCliente || !cliente) return { ok: false, erro: amigavel(erroCliente?.message ?? "Não foi possível criar o cliente.") };
+
+  // O trigger do banco semeia os 100 codigos e a loja matriz automaticamente.
+  const { error: erroEmpresa } = await supabase
+    .from("empresas")
+    .insert({ nome: nomeEmpresa, cliente_id: cliente.id });
+  if (erroEmpresa) {
+    await supabase.from("clientes").delete().eq("id", cliente.id);
+    return { ok: false, erro: amigavel(erroEmpresa.message) };
+  }
+
+  const token = crypto.randomUUID().replace(/-/g, "");
+  const { error: erroConvite } = await supabase.from("convites").insert({
+    token,
+    email: email.toLowerCase(),
+    papel: "empresario",
+    funcao: null,
+    gestor_id: null,
+    cliente_id: cliente.id,
+    criado_por: sessao.user?.id ?? null,
+  });
+  if (erroConvite) {
+    // empresas -> clientes e "on delete restrict": precisa apagar a empresa
+    // primeiro, senao o banco recusa apagar o cliente com empresa pendurada.
+    await supabase.from("empresas").delete().eq("cliente_id", cliente.id);
+    await supabase.from("clientes").delete().eq("id", cliente.id);
+    return { ok: false, erro: amigavel(erroConvite.message) };
+  }
+
+  revalidatePath("/carteira");
+  return { ok: true, token };
+}
+
 export async function salvarEmpresa(fd: FormData): Promise<Resultado> {
   const nome = texto(fd, "nome");
   const clienteId = texto(fd, "cliente_id");
