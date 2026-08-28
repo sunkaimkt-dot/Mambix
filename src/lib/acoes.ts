@@ -101,36 +101,42 @@ export async function registrarBaixa(fd: FormData): Promise<Resultado> {
   const pagamentoId = texto(fd, "pagamento_id");
   const dataPagamento = texto(fd, "data_pagamento");
   const valor = numero(fd, "valor");
+  const cdJuros = fd.get("cd_juros") ? Number(fd.get("cd_juros")) : null;
 
   if (!pagamentoId) return { ok: false, erro: "Lançamento não identificado." };
   if (!dataPagamento) return { ok: false, erro: "Informe a data em que o pagamento saiu." };
   if (valor === null || valor <= 0) return { ok: false, erro: "Informe um valor válido." };
 
   const supabase = await supabaseServer();
+
+  // Pagar mais do que o saldo em aberto (conta com atraso) exige o código de
+  // juro: é a diferença que vira o lançamento automático do juro (ver
+  // registrar_baixa_com_juros, migration 0014). Confere aqui pra dar um erro
+  // amigável antes de chamar a função do banco.
   const { data: pag, error: erroBusca } = await supabase
     .from("pagamentos_saldo")
-    .select("empresa_id, saldo")
+    .select("saldo")
     .eq("id", pagamentoId)
     .maybeSingle();
   if (erroBusca) return { ok: false, erro: amigavel(erroBusca.message) };
   if (!pag) return { ok: false, erro: "Lançamento não encontrado." };
-
-  if (valor > Number(pag.saldo) + 0.01) {
-    return { ok: false, erro: `O valor excede o saldo em aberto (${Number(pag.saldo).toFixed(2)}).` };
+  if (valor > Number(pag.saldo) + 0.01 && !cdJuros) {
+    return { ok: false, erro: "O valor pago é maior que o saldo em aberto — escolha o código de despesa do juro." };
   }
 
-  const { error } = await supabase.from("pagamento_baixas").insert({
-    empresa_id: pag.empresa_id,
-    pagamento_id: pagamentoId,
-    data_pagamento: dataPagamento,
-    valor,
-    banco_id: texto(fd, "banco_id"),
-    cp: fd.get("cp") ? Number(fd.get("cp")) : null,
+  const { error } = await supabase.rpc("registrar_baixa_com_juros", {
+    p_pagamento_id: pagamentoId,
+    p_data_pagamento: dataPagamento,
+    p_valor: valor,
+    p_banco_id: texto(fd, "banco_id"),
+    p_cp: fd.get("cp") ? Number(fd.get("cp")) : null,
+    p_cd_juros: cdJuros,
   });
   if (error) return { ok: false, erro: amigavel(error.message) };
 
   revalidatePath("/pagamentos");
   revalidatePath("/em-aberto");
+  revalidatePath("/dre");
   revalidatePath("/dfc");
   return { ok: true };
 }

@@ -25,6 +25,7 @@ export default function Baixa({
   baixas,
   formas,
   bancos,
+  codigosJuros = [],
 }: {
   pagamentoId: string;
   valor: number;
@@ -32,6 +33,8 @@ export default function Baixa({
   baixas: BaixaRegistrada[];
   formas: { codigo: number; nome: string }[];
   bancos: { id: string; nome: string }[];
+  /** Códigos de despesa do grupo Financeiras, oferecidos quando o valor pago passa do saldo (juro). */
+  codigosJuros?: { codigo: number; nome: string }[];
 }) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
@@ -48,6 +51,11 @@ export default function Baixa({
   const parcial = totalPago > 0 && !quitado;
   const hoje = new Date().toISOString().slice(0, 10);
 
+  const [valorDigitado, setValorDigitado] = useState(saldo.toFixed(2).replace(".", ","));
+  const valorNumerico = Number(valorDigitado.replace(/\./g, "").replace(",", "."));
+  const juros = Number.isFinite(valorNumerico) ? Math.max(0, Number((valorNumerico - saldo).toFixed(2))) : 0;
+  const temJuros = juros > 0.009;
+
   const cor = quitado
     ? "bg-sky-100 text-sky-700 hover:bg-sky-200"
     : parcial
@@ -60,7 +68,12 @@ export default function Baixa({
     <>
       <button
         type="button"
-        onClick={() => setAberto((v) => !v)}
+        onClick={() => {
+          // Reseta o valor sugerido pro saldo atual sempre que abre — se ficou
+          // aberto de uma vez anterior, o saldo pode ter mudado (outra baixa).
+          setValorDigitado(saldo.toFixed(2).replace(".", ","));
+          setAberto((v) => !v);
+        }}
         className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${cor}`}
       >
         {rotulo}
@@ -139,7 +152,8 @@ export default function Baixa({
                     name="valor"
                     required
                     inputMode="decimal"
-                    defaultValue={saldo.toFixed(2).replace(".", ",")}
+                    value={valorDigitado}
+                    onChange={(e) => setValorDigitado(e.target.value)}
                     className={inputCls}
                   />
                 </label>
@@ -170,9 +184,29 @@ export default function Baixa({
                 </label>
               </div>
 
-              <p className="text-[11px] leading-relaxed text-slate-400">
-                Pagou menos que o total? Ajuste o valor — a conta continua em aberto pelo restante.
-              </p>
+              {temJuros ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5">
+                  <p className="text-[11px] leading-relaxed text-amber-800">
+                    Valor pago maior que o saldo ({brl(saldo)}) — a diferença de{" "}
+                    <strong>{brl(juros)}</strong> entra como juro, já pago, na competência deste mês.
+                  </p>
+                  <label className="mt-2 block">
+                    <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-amber-800">
+                      Código de despesa do juro
+                    </span>
+                    <select name="cd_juros" required className={inputCls} defaultValue="">
+                      <option value="">selecione</option>
+                      {codigosJuros.map((c) => (
+                        <option key={c.codigo} value={c.codigo}>{c.codigo} — {c.nome}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              ) : (
+                <p className="text-[11px] leading-relaxed text-slate-400">
+                  Pagou menos que o total? Ajuste o valor — a conta continua em aberto pelo restante.
+                </p>
+              )}
 
               <div className="flex gap-2">
                 <button className="flex-1 rounded-lg bg-marca px-3 py-1.5 text-sm font-semibold text-white hover:bg-marca-escura">

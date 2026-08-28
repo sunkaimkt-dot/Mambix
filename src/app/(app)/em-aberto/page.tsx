@@ -32,13 +32,15 @@ export default async function EmAberto({
       .eq("empresa_id", ctx.empresaId)
       .eq("pago", false)
       .order("vencimento"),
-    supabase.from("codigos_despesa").select("codigo, nome").eq("empresa_id", ctx.empresaId).order("codigo"),
+    supabase.from("codigos_despesa").select("codigo, nome, grupo").eq("empresa_id", ctx.empresaId).order("codigo"),
     supabase.from("formas_pagamento").select("codigo, nome").eq("empresa_id", ctx.empresaId).order("codigo"),
     supabase.from("bancos").select("id, nome").eq("empresa_id", ctx.empresaId).eq("ativo", true).order("nome"),
   ]);
 
   const nomeCodigo = new Map((codigosRes.data ?? []).map((c) => [c.codigo, c.nome]));
   const lista = (listaRes.data ?? []).filter((p) => !ctx.lojaId || p.loja_id === ctx.lojaId);
+  // Oferecidos no campo de juro da baixa, quando o valor pago passa do saldo.
+  const codigosJuros = (codigosRes.data ?? []).filter((c) => c.grupo === "FINANCEIRAS" && c.nome !== "");
 
   const { data: baixasData } = await supabase
     .from("pagamento_baixas")
@@ -114,6 +116,7 @@ export default async function EmAberto({
                       baixas={baixasPor.get(p.id) ?? []}
                       formas={formas}
                       bancos={bancos}
+                      codigosJuros={codigosJuros}
                     />
                   </td>
                 </tr>

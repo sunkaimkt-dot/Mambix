@@ -31,6 +31,8 @@ export default async function Pagamentos({
   ]);
 
   const codigos = (codigosRes.data ?? []).filter((c) => c.nome !== "");
+  // Oferecidos no campo de juro da baixa, quando o valor pago passa do saldo.
+  const codigosJuros = codigos.filter((c) => c.grupo === "FINANCEIRAS");
   const nomeCodigo = new Map((codigosRes.data ?? []).map((c) => [c.codigo, c.nome]));
   const nomeForma = new Map((formasRes.data ?? []).map((f) => [f.codigo, f.nome]));
   const nomeBanco = new Map((bancosRes.data ?? []).map((b) => [b.id, b.nome]));
@@ -135,6 +137,7 @@ export default async function Pagamentos({
                         baixas={baixasPor.get(p.id) ?? []}
                         formas={(formasRes.data ?? []).filter((f) => f.nome !== "")}
                         bancos={bancosRes.data ?? []}
+                        codigosJuros={codigosJuros}
                       />
                     </td>
                     <td className="px-3 py-2 text-right"><BotaoExcluir tabela="pagamentos" id={p.id} /></td>
