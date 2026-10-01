@@ -17,3 +17,61 @@
   --marca-escura: color-mix(in srgb, var(--marca) 82%, black);
   --marca-contraste: white;
 }
+
+/* ===== Impressao / PDF (Combo 2) =====
+   Vale para qualquer tela impressa com o botao "Imprimir / Salvar PDF".
+   Menu lateral, seletores, filtros e botoes nao vao para o papel; o cabecalho
+   de impressao (CabecalhoImpressao) diz empresa, loja e periodo no lugar deles. */
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+}
+@page paisagem {
+  size: A4 landscape;
+  margin: 10mm;
+}
+@media print {
+  html,
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  aside,
+  header select,
+  form,
+  button,
+  dialog,
+  .no-print {
+    display: none !important;
+  }
+  /* O FiltroRelatorio e um bloco com um form dentro: some inteiro */
+  main div:has(> form) {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  /* O cabecalho da tela (titulo + seletores) da lugar ao CabecalhoImpressao */
+  main > header {
+    display: none !important;
+  }
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+  tr,
+  .avoid-break {
+    break-inside: avoid;
+  }
+  .quebra-antes {
+    break-before: page;
+  }
+  /* Tabelas largas (Evolucao, 14 colunas) saem deitadas */
+  .pagina-paisagem {
+    page: paisagem;
+  }
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+}
