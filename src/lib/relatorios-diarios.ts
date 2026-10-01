@@ -207,7 +207,7 @@ export async function serieCaixa12Meses(
     const p = pontos.get(b.data_pagamento.slice(0, 7));
     if (p) p.saidas += Number(b.valor);
   }
-  return [...pontos.values()];
+  return Array.from(pontos.values());
 }
 
 export type PontoResultado = MesRef & {
@@ -278,7 +278,7 @@ export async function serieResultado12Meses(
     if (alvo && pm.margem_bruta_pct !== null) alvo.margem = Number(pm.margem_bruta_pct);
   }
 
-  return [...pontos.values()].map((p) => ({
+  return Array.from(pontos.values()).map((p) => ({
     ...p,
     resultado: p.margem === null ? null : p.faturamento * p.margem - p.despesas,
   }));
@@ -503,9 +503,9 @@ export async function dadosFaturamentoDiario(
   const nomes = new Map((tiposRes.data ?? []).map((t) => [t.codigo, t.nome]));
   const codigos = new Set<number>([
     ...(tiposRes.data ?? []).filter((t) => t.nome !== "").map((t) => t.codigo),
-    ...totalTipo.keys(),
+    ...Array.from(totalTipo.keys()),
   ]);
-  const tipos = [...codigos]
+  const tipos = Array.from(codigos)
     .sort((a, b) => a - b)
     .map((codigo) => ({ codigo, nome: nomes.get(codigo) || `Tipo ${codigo}`, total: totalTipo.get(codigo) ?? 0 }));
 
