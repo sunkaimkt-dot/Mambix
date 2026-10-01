@@ -24,7 +24,7 @@ const GRUPOS: Grupo[] = [
       { href: "/dfc", rotulo: "Fluxo de Caixa (DFC)", pronto: true },
       { href: "/dre-contabil", rotulo: "DRE Contábil", pronto: false },
       { href: "/fluxo-contabil", rotulo: "Fluxo Contábil", pronto: false },
-      { href: "/fluxo-diario", rotulo: "Fluxo Diário", pronto: false },
+      { href: "/fluxo-diario", rotulo: "Fluxo Diário", pronto: true },
       { href: "/faturamento-diario", rotulo: "Faturamento Diário", pronto: false },
       { href: "/impressao", rotulo: "Impressão / PDF", pronto: false },
     ],
