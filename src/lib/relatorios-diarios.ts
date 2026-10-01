@@ -452,6 +452,7 @@ export type FaturamentoDiario = {
   tipos: { codigo: number; nome: string; total: number }[];
   linhas: LinhaFaturamentoDiario[];
   total: number;
+  totalMesAnterior: number; // o mes anterior inteiro (pode ter mais dias que o atual)
   diasComVenda: number;
   mediaDiaria: number; // total / dias com venda
   mediaPorDiaSemana: { diaSemana: number; media: number; dias: number }[]; // domingo..sabado
@@ -553,6 +554,7 @@ export async function dadosFaturamentoDiario(
     tipos,
     linhas,
     total,
+    totalMesAnterior: totalDiaAnt.reduce((s, v) => s + v, 0),
     diasComVenda,
     mediaDiaria: diasComVenda ? total / diasComVenda : 0,
     mediaPorDiaSemana: somaSemana.map((s, i) => ({ diaSemana: i, media: qtdSemana[i] ? s / qtdSemana[i] : 0, dias: qtdSemana[i] })),

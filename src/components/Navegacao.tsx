@@ -25,7 +25,7 @@ const GRUPOS: Grupo[] = [
       { href: "/dre-contabil", rotulo: "DRE Contábil", pronto: false },
       { href: "/fluxo-contabil", rotulo: "Fluxo Contábil", pronto: false },
       { href: "/fluxo-diario", rotulo: "Fluxo Diário", pronto: true },
-      { href: "/faturamento-diario", rotulo: "Faturamento Diário", pronto: false },
+      { href: "/faturamento-diario", rotulo: "Faturamento Diário", pronto: true },
       { href: "/impressao", rotulo: "Impressão / PDF", pronto: false },
     ],
   },
