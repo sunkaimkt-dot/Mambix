@@ -23,7 +23,8 @@ function abreviar(v: number) {
   const a = Math.abs(v);
   const s = v < 0 ? "-" : "";
   if (a >= 1_000_000) return `${s}${(a / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
-  if (a >= 1000) return `${s}${Math.round(a / 1000)}k`;
+  if (a >= 10_000) return `${s}${Math.round(a / 1000)}k`;
+  if (a >= 1000) return `${s}${(a / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}k`;
   return `${s}${Math.round(a)}`;
 }
 
@@ -283,7 +284,7 @@ export function GraficoDiario({
             <g key={i}>
               <path d={barra(x, yBase, wBarra, (v / topo) * alturaUtil, true, 2)} fill={VERDE} fillOpacity={fimDeSemana ? 0.55 : 0.9} />
               <text x={L + i * passo + passo / 2} y={H - 16} textAnchor="middle" fontSize="9" fill={TEXTO}>{i + 1}</text>
-              <text x={L + i * passo + passo / 2} y={H - 5} textAnchor="middle" fontSize="7.5" fill={NEUTRO}>{SEMANA_CURTA[diasSemana[i]].slice(0, 1)}</text>
+              <text x={L + i * passo + passo / 2} y={H - 5} textAnchor="middle" fontSize="7" fill={NEUTRO}>{SEMANA_CURTA[diasSemana[i]]}</text>
             </g>
           );
         })}
