@@ -5,6 +5,20 @@
 
 ---
 
+## 0. Decisões de 02/10/2026 (valem sobre o resto do documento)
+
+- **O sistema é da Mambix.** Não será vendido para outros BPOs. Há um BPO só (a Mambix, com equipe nas funções administrador / operador / consulta) e os clientes finais dela. No banco a estrutura de carteiras continua (a da Mambix é a `principal`), mas a interface não mostra mais níveis de BPO, a porta `/<apelido>` saiu e o login fica na raiz do domínio.
+- **Marca única:** a da Mambix, editável em Marca e cores pelo dono e pelos administradores.
+- **Cliente final pode lançar** (pagamentos, receitas, caixa, baixas) além de ver os relatórios. Cadastro de clientes, códigos e convites continua só com a Mambix.
+- **DRE Família (5.11) fora do escopo.** Os dados (códigos da família, campo Casa) ficam no banco, sem tela.
+- **Padrões de mercado aplicados onde havia [VALIDAR]**, todos editáveis depois:
+  - tipo de recebimento 4 = "VALE ALIMENTAÇÃO / REFEIÇÃO";
+  - empresa nova nasce com 11 bancos comuns (Caixa da empresa, BB, Bradesco, Itaú, Santander, Caixa Econômica, Nubank, Inter, Sicoob, Sicredi, Mercado Pago) — o cliente desliga o que não usa em Bancos e lojas;
+  - "Dinheiro" no DFC: o DFC soma **só** a tela Receitas. Venda em dinheiro do Caixa Diário entra no DFC quando for registrada como receita (depósito ou entrada no caixa da empresa) — sem dupla contagem;
+  - visão consolidada multi-loja: existe ("Todas as lojas");
+  - margem bruta continua parâmetro mensal; mês sem margem não mostra lucro (nem no Painel nem em Gráficos).
+- **Importação de extrato:** PDF (leitor genérico, data + valor por linha) e OFX, com classificação sugerida por regras e revisão humana linha a linha antes de gravar.
+
 ## 1. Visão geral
 
 Sistema web (SaaS) para consultoria financeira gerencial de pequenas empresas. Substitui o modelo atual de **uma planilha Excel por mês** por um banco de dados contínuo: os relatórios de qualquer mês/ano são gerados por consulta, e a "evolução 12 meses" deixa de exigir copiar-e-colar.
@@ -24,7 +38,7 @@ Sistema web (SaaS) para consultoria financeira gerencial de pequenas empresas. S
 | Perfil | Acesso |
 |---|---|
 | **Consultor (admin)** | Todas as empresas; cria empresas, lojas e usuários; lança e edita; configura tabelas de códigos; vê todos os relatórios |
-| **Empresário** | Somente a(s) sua(s) empresa(s) e lojas; visualiza relatórios; **[VALIDAR]** se também pode lançar ou só visualizar |
+| **Empresário** | Somente a(s) sua(s) empresa(s) e lojas; visualiza relatórios **e lança** (decidido em 02/10/2026) |
 
 Estrutura multi-tenant: **Consultor → Empresas (1..n) → Lojas (1..n: matriz, filiais)**. No Excel isso aparece como "FLUXO DE CAIXA - 1", "DRE 1", coluna LOJA etc.
 
@@ -184,7 +198,7 @@ Mesma lógica, com entradas/saídas e grupos do caixa.
 ### 5.10 Simulador de Cenários (DRE e DFC)
 A partir do mês base (faturamento, CMV, custos variáveis, MC, despesas fixas, LOAI, investimentos, não operacionais, lucro): o usuário digita variações em % e vê o novo resultado e a diferença no lucro, em 4 alavancas independentes: **preço médio**, **quantidade vendida**, **custo variável**, **despesa fixa**.
 
-### 5.11 DRE Família (orçamento doméstico)
+### 5.11 DRE Família (orçamento doméstico) — FORA DO ESCOPO (02/10/2026)
 100 códigos da casa agrupados (§3.6), receitas (pró-labore) vs despesas e **resultado do mês** — a pessoa gasta mais ou menos do que ganha.
 
 ### 5.12 Impressão (DRE e DFC)
@@ -192,7 +206,7 @@ Versão paginada para impressão: códigos 1–50 / 51–100 / totalizadores por
 
 ---
 
-## 5.13 Importação em massa — Excel e PDF (planejado)
+## 5.13 Importação em massa — Excel e PDF (construído: Excel/CSV, extrato PDF e OFX)
 
 Módulo para o consultor subir dados sem digitar lançamento a lançamento:
 
@@ -251,8 +265,8 @@ organizacoes (consultoria)
 ## 9. Roadmap de construção
 
 1. ~~Especificação~~ (este documento)
-2. Banco + fundação (Supabase, auth, multi-tenant, seeds dos códigos)
-3. Telas de lançamento (Pagamentos, Receitas, Caixa Diário)
-4. Relatórios (DRE, DFC, contábeis, fluxo/faturamento diário, evoluções, gráficos, família, PDF)
-5. Simuladores + publicação
+2. ~~Banco + fundação (Supabase, auth, multi-tenant, seeds dos códigos)~~
+3. ~~Telas de lançamento (Pagamentos, Receitas, Caixa Diário)~~ + Bancos e lojas, saldo inicial
+4. ~~Relatórios (DRE, DFC, contábeis, fluxo/faturamento diário, evoluções, gráficos, PDF)~~ — família fora
+5. ~~Simuladores~~ + importação (Excel/CSV, extrato PDF/OFX) — falta publicar
 6. (futuro) Balanço Patrimonial

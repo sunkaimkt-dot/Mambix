@@ -79,6 +79,8 @@ const cA = (await um(`insert into clientes (gestor_id,nome) values ($1,'Padaria'
 const E = (await um(`insert into empresas (nome,cliente_id) values ('Padaria Central',$1) returning id`, [cA])).id;
 const matriz = (await um(`select id from lojas where empresa_id=$1 and is_matriz`, [E])).id;
 const loja2 = (await um(`insert into lojas (empresa_id,nome) values ($1,'Filial') returning id`, [E])).id;
+// Desde a 0121 empresa nova nasce com bancos padrao; este cenario quer so os 2 dele.
+await db.query(`delete from bancos where empresa_id=$1`, [E]);
 const itau = (await um(`insert into bancos (empresa_id,nome) values ($1,'Itaú') returning id`, [E])).id;
 await db.query(`insert into bancos (empresa_id,nome) values ($1,'Caixa interno')`, [E]);
 for (const [ano, mes, m] of [[2026, 6, null], [2026, 7, 0.4], [2026, 8, 0.38], [2026, 9, 0.42]]) {
@@ -186,7 +188,7 @@ const csvPag = [
   "10/09/2026;31;Aluguel antigo;2000;;;10/09/2026;",                    // L12 duplicada do banco -> nao entra
   "10/09/2026;31;Competência outubro;100;;10/2026;;",                    // L13 DRE out +100
   "10/09/2026;31;CFC ruim;10;7;;;",                                      // L14 erro
-  "10/09/2026;31;Banco ruim;10;;;;Bradesco",                             // L15 erro
+  "10/09/2026;31;Banco ruim;10;;;;Banco Fantasma",                           // L15 erro
   "",
   "11/09/2026;38;Advogado;  1.000  ;;;;",                                // L17 DRE set +1000 (linha vazia antes)
 ].join("\n");
@@ -234,7 +236,7 @@ const csvRec = [
   "03/09/2026;7;Pix cliente;250",
   "04/09/2026;7 - PIX - TED - DEPÓSITO;Pix 2;49,50",
   "05/09/2026;3;Cielo;5000",          // igual a receita do banco -> duplicada
-  "06/09/2026;4;Tipo vazio;10",       // tipo 4 sem nome -> erro
+  "06/09/2026;15;Tipo inexistente;10", // tipo 15 nao existe -> erro (o 4 ganhou nome na 0121)
 ].join("\n");
 const rr = await importar("receitas", csvRec, { bancoPadraoId: itau });
 checa("3 entram, 1 duplicada, 1 erro", rr.resultados.filter((r) => r.ok).length === 3 && rr.linhas[3].situacao === "duplicado" && rr.linhas[4].situacao === "erro", rr.linhas.map((l) => [l.situacao, l.motivos]));
