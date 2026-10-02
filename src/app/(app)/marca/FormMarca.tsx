@@ -136,8 +136,9 @@ export default function FormMarca({
   })();
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-      {/* de quem e a marca */}
+    <div className={`grid gap-6 ${alvos.length > 1 ? "lg:grid-cols-[260px_1fr]" : ""}`}>
+      {/* de quem e a marca -- com uma marca so (Mambix), a lista nao aparece */}
+      {alvos.length > 1 && (
       <Cartao className="h-fit p-3">
         {grupos.map((g) => (
           <div key={g} className="mb-3 last:mb-0">
@@ -166,6 +167,7 @@ export default function FormMarca({
           </div>
         ))}
       </Cartao>
+      )}
 
       <div className="space-y-4">
         <Cartao className="p-4">
@@ -174,7 +176,7 @@ export default function FormMarca({
               <p className="text-sm font-semibold">{alvo.rotulo}</p>
               <p className="text-xs text-slate-500">
                 {alvo.nivel === "plataforma"
-                  ? "Vale para todo mundo que não personalizou nada."
+                  ? "Vale para a equipe e para todos os clientes."
                   : "Campo em branco herda do nível de cima."}
               </p>
             </div>
