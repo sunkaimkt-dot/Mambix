@@ -59,6 +59,9 @@ checa("6 meses: DFC usa os meses com movimento de caixa (jun não teve: salário
 const b6m = sim.montarBaseDFC([{ ano: 2026, mes: 6, entradas: 0, porTipoRecebimento: [], porCFC: [{ cfc: 1, total: 100 }], saidas: 100 }]);
 checa("DFC: mês sem margem mas com saída entra na média do caixa", b6m.meses.length === 1 && b6m.excluidos.length === 0);
 
+const bJun = await carregarBaseSimulador(E, 2026, 6, 1, null);
+checa("base de 1 mês sem margem (jun): mês entra como na DRE Gerencial, com aviso", bJun.dre.semMargem && bJun.dre.meses.length === 1 && cent(sim.simularDRE(bJun.dre, Z).resultado.base) === cent((await dadosDRE(E, 2026, 6, null)).resultado));
+
 console.log("\n\x1b[1m11. SIMULADOR — CADA ALAVANCA (setembro, consolidado)\x1b[0m");
 // set: fat 2.500; CMV 2.500 x 58% = 1.450; Simples 900 (sobre vendas); taxa 180 (variavel); aluguel 2.000 (fixa)
 const b1 = await carregarBaseSimulador(E, 2026, 9, 1, null);

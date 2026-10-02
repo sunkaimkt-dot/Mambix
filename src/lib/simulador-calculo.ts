@@ -60,6 +60,8 @@ export type MesDFC = {
 
 export type BaseDRE = {
   meses: { ano: number; mes: number }[];
+  /** Base de 1 mes so, e esse mes esta sem margem em Parametros (CMV = faturamento). */
+  semMargem: boolean;
   excluidos: { ano: number; mes: number; motivo: string }[];
   faturamento: number;
   porTipoVenda: Linha[];
@@ -90,20 +92,21 @@ function mediaLinhas(listas: Linha[][], n: number): Linha[] {
       mapa.set(l.codigo, atual);
     }
   }
-  return [...mapa.values()].sort((a, b) => a.codigo - b.codigo).map((l) => ({ ...l, valor: n > 1 ? l.valor / n : l.valor }));
+  return Array.from(mapa.values()).sort((a, b) => a.codigo - b.codigo).map((l) => ({ ...l, valor: n > 1 ? l.valor / n : l.valor }));
 }
 
 const soma = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
 
 /**
  * Base da DRE: 1 mes, ou media dos meses validos.
- * Fica fora da media (com aviso) o mes SEM MARGEM em Parametros -- nele o CMV
+ * Na MEDIA fica fora (com aviso) o mes SEM MARGEM em Parametros -- nele o CMV
  * sai igual ao faturamento e o lucro bruto zera, o que puxaria a media para
  * baixo sem ser real -- e o mes sem movimento nenhum.
+ * Com 1 mes so, o mes entra como esta (igual a DRE Gerencial) e a tela avisa.
  */
 export function montarBaseDRE(meses: MesDRE[]): BaseDRE {
   const excluidos: BaseDRE["excluidos"] = [];
-  const validos = meses.filter((m) => {
+  const validos = meses.length === 1 ? meses : meses.filter((m) => {
     const despesas = soma(m.porCodigo.filter((c) => c.codigo <= 90).map((c) => c.valor));
     if (m.faturamento === 0 && despesas === 0) {
       excluidos.push({ ano: m.ano, mes: m.mes, motivo: "sem movimento" });
@@ -119,6 +122,7 @@ export function montarBaseDRE(meses: MesDRE[]): BaseDRE {
   const media = (f: (m: MesDRE) => number) => (n > 1 ? soma(validos.map(f)) / n : n === 1 ? f(validos[0]) : 0);
   return {
     meses: validos.map((m) => ({ ano: m.ano, mes: m.mes })),
+    semMargem: meses.length === 1 && meses[0].margem === 0,
     excluidos,
     faturamento: media((m) => m.faturamento),
     porTipoVenda: mediaLinhas(validos.map((m) => m.porTipoVenda), n),
