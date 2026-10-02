@@ -657,3 +657,92 @@ export async function trocarFuncao(userId: string, funcao: "admin" | "operador" 
   revalidatePath("/carteira");
   return { ok: true };
 }
+
+// ============================================================
+// Bancos, lojas e saldo inicial
+// ============================================================
+
+/** Cadastra um banco (sem id) ou renomeia um existente (com id). */
+export async function salvarBanco(fd: FormData): Promise<Resultado> {
+  const empresaId = texto(fd, "empresa_id");
+  const id = texto(fd, "id");
+  const nome = texto(fd, "nome")?.toUpperCase() ?? null;
+  if (!empresaId) return { ok: false, erro: "Empresa não informada." };
+  if (!nome) return { ok: false, erro: "Informe o nome do banco." };
+
+  const supabase = await supabaseServer();
+  const { error } = id
+    ? await supabase.from("bancos").update({ nome }).eq("id", id).eq("empresa_id", empresaId)
+    : await supabase.from("bancos").insert({ empresa_id: empresaId, nome });
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/bancos");
+  return { ok: true };
+}
+
+/**
+ * Liga ou desliga um banco. Nao se apaga: lancamentos antigos apontam para ele,
+ * e o historico tem que continuar mostrando o nome. Desligado, ele so some das
+ * listas de lancamento novo.
+ */
+export async function alternarBanco(id: string, ativo: boolean): Promise<Resultado> {
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from("bancos").update({ ativo }).eq("id", id);
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/bancos");
+  return { ok: true };
+}
+
+/** Cadastra uma loja (filial) ou renomeia uma existente. */
+export async function salvarLoja(fd: FormData): Promise<Resultado> {
+  const empresaId = texto(fd, "empresa_id");
+  const id = texto(fd, "id");
+  const nome = texto(fd, "nome")?.toUpperCase() ?? null;
+  if (!empresaId) return { ok: false, erro: "Empresa não informada." };
+  if (!nome) return { ok: false, erro: "Informe o nome da loja." };
+
+  const supabase = await supabaseServer();
+  const { error } = id
+    ? await supabase.from("lojas").update({ nome }).eq("id", id).eq("empresa_id", empresaId)
+    : await supabase.from("lojas").insert({ empresa_id: empresaId, nome, is_matriz: false });
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/bancos");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Saldo inicial do mes, banco a banco (parametros_mes.saldo_inicial =
+ * {banco_id: valor}). Campo em branco tira o banco do jsonb; tudo em branco
+ * grava null, que e o "nao informado" que o Fluxo Diario entende.
+ * O upsert so manda esta coluna, entao margem e clientes ficam como estao.
+ */
+export async function salvarSaldoInicial(fd: FormData): Promise<Resultado> {
+  const empresaId = texto(fd, "empresa_id");
+  const ano = Number(fd.get("ano"));
+  const mes = Number(fd.get("mes"));
+  if (!empresaId || !ano || !mes) return { ok: false, erro: "Mês inválido." };
+
+  const saldos: Record<string, number> = {};
+  for (const [chave, valor] of Array.from(fd.entries())) {
+    const m = chave.match(/^saldo_(.+)$/);
+    if (!m || typeof valor !== "string" || valor.trim() === "") continue;
+    const n = Number(valor.trim().replace(/\./g, "").replace(",", "."));
+    if (Number.isNaN(n)) return { ok: false, erro: `Valor inválido: ${valor}` };
+    saldos[m[1]] = Math.round(n * 100) / 100;
+  }
+
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from("parametros_mes").upsert(
+    {
+      empresa_id: empresaId,
+      ano,
+      mes,
+      saldo_inicial: Object.keys(saldos).length ? saldos : null,
+    },
+    { onConflict: "empresa_id,ano,mes" }
+  );
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  revalidatePath("/parametros");
+  revalidatePath("/fluxo-diario");
+  return { ok: true };
+}

@@ -27,7 +27,7 @@ export default async function FluxoDiario({
 
   const avisoSaldo =
     d.origemSaldoInicial === "sem-saldo"
-      ? "Nenhum saldo inicial informado para este mês — o fluxo começa em R$ 0,00 e mostra só a movimentação do mês."
+      ? "Nenhum saldo inicial informado para este mês — o fluxo começa em R$ 0,00 e mostra só a movimentação do mês. Informe o saldo de cada banco em Parâmetros do mês."
       : d.origemSaldoInicial === "loja"
         ? "Com uma loja escolhida o saldo inicial não é usado (ele é por banco, da empresa toda). O fluxo mostra só a movimentação da loja."
         : null;
