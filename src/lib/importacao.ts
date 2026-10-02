@@ -67,7 +67,7 @@ export function normalizar(t: unknown): string {
     .trim();
 }
 
-function textoCelula(v: Celula): string {
+export function textoCelula(v: Celula): string {
   if (v === null || v === undefined) return "";
   if (v instanceof Date) return dataISO(v) ?? "";
   return String(v).trim();

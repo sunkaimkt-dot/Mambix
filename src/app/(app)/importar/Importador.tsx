@@ -14,6 +14,7 @@ import {
   normalizar,
   periodoDasLinhas,
   separarCabecalho,
+  textoCelula,
   validarLinhas,
   valorDaLinha,
   type Celula,
@@ -260,6 +261,12 @@ export default function Importador({
   }
 
   const visiveis = (linhas ?? []).filter((l) => !soProblemas || l.situacao !== "ok");
+  // Linha com erro nao tem valor interpretado: mostra o que veio no arquivo.
+  const bruto = (l: LinhaValidada, chave: string) => {
+    const i = mapa[chave];
+    const t = i === undefined || i < 0 ? "" : textoCelula(l.original[i]);
+    return t ? <span className="italic">{t}</span> : "—";
+  };
   const nomeCodigo = new Map(referencias.codigos.map((c) => [c.codigo, c.nome]));
   const nomeTipoRec = new Map(referencias.tiposRecebimento.map((c) => [c.codigo, c.nome]));
   const nomeTipoVenda = new Map(referencias.tiposVenda.map((c) => [c.codigo, c.nome]));
@@ -452,12 +459,12 @@ export default function Importador({
                       <td className="px-2 py-1 tabular-nums">{c && c.linhasSomadas.length > 1 ? c.linhasSomadas.join(", ") : l.numero}</td>
                       <td className="px-2 py-1"><span className={`rounded px-1.5 py-0.5 text-xs ${s.cls}`}>{s.rotulo}</span></td>
                       <td className="whitespace-nowrap px-2 py-1 tabular-nums">
-                        {p ? formatarDataBR(p.vencimento) : r ? formatarDataBR(r.data) : c ? formatarDataBR(c.data) : "—"}
+                        {p ? formatarDataBR(p.vencimento) : r ? formatarDataBR(r.data) : c ? formatarDataBR(c.data) : bruto(l, tipo === "pagamentos" ? "vencimento" : "data")}
                       </td>
                       <td className="px-2 py-1">
-                        {p ? `${p.cd} - ${nomeCodigo.get(p.cd) ?? ""}` : r ? nomeTipoRec.get(r.tipo_recebimento) : c ? nomeTipoVenda.get(c.tipo_venda) : "—"}
+                        {p ? `${p.cd} - ${nomeCodigo.get(p.cd) ?? ""}` : r ? nomeTipoRec.get(r.tipo_recebimento) : c ? nomeTipoVenda.get(c.tipo_venda) : bruto(l, tipo === "pagamentos" ? "codigo" : "tipo")}
                       </td>
-                      {tipo !== "caixa_diario" && <td className="max-w-[14rem] truncate px-2 py-1">{p?.descricao ?? r?.descricao ?? ""}</td>}
+                      {tipo !== "caixa_diario" && <td className="max-w-[14rem] truncate px-2 py-1">{p?.descricao ?? r?.descricao ?? bruto(l, "descricao")}</td>}
                       {tipo === "pagamentos" && (
                         <>
                           <td className="px-2 py-1" title={p?.cfcSugerido ? "sugerido pelo grupo do código" : undefined}>
@@ -467,7 +474,7 @@ export default function Importador({
                           <td className="px-2 py-1 tabular-nums">{p?.data_pagamento ? formatarDataBR(p.data_pagamento) : p ? "em aberto" : ""}</td>
                         </>
                       )}
-                      <td className="px-2 py-1 text-right tabular-nums">{l.situacao === "erro" && !p && !r && !c ? "" : brl(valorDaLinha(l))}</td>
+                      <td className="px-2 py-1 text-right tabular-nums">{!p && !r && !c ? bruto(l, "valor") : brl(valorDaLinha(l))}</td>
                       <td className="px-2 py-1 text-xs">
                         {l.motivos.join("; ")}
                         {c?.valorExistente !== undefined && ` (hoje: ${brl(c.valorExistente)})`}
