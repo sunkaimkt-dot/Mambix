@@ -16,7 +16,7 @@ export type Alvo = {
 /* `cor_secundaria` existe na tabela mas nao aparece aqui de proposito: nenhuma
    parte da interface usa essa cor ainda, e campo que promete e nao cumpre e pior
    do que campo que nao existe. O tom escuro do hover sai calculado da cor
-   principal, entao o consultor informa UMA cor e o resto se resolve. */
+   principal, entao basta informar UMA cor e o resto se resolve. */
 const CAMPOS_COR = [
   { k: "cor_primaria", rotulo: "Cor principal", ajuda: "Botões, links e o item ativo do menu." },
   { k: "cor_positivo", rotulo: "Números positivos", ajuda: "Entradas, receitas e lucro." },

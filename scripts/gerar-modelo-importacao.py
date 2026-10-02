@@ -1,4 +1,4 @@
-"""Gera public/modelos/modelo-importacao-nortex.xlsx (Combo 3).
+"""Gera public/modelos/modelo-importacao-mambix.xlsx (Combo 3).
 
 Arquivo estatico de proposito: o modelo nao precisa de biblioteca nenhuma no
 sistema. Rodar de novo so se mudar alguma coluna da importacao:
@@ -14,7 +14,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
-SAIDA = Path(__file__).resolve().parent.parent / "public" / "modelos" / "modelo-importacao-nortex.xlsx"
+SAIDA = Path(__file__).resolve().parent.parent / "public" / "modelos" / "modelo-importacao-mambix.xlsx"
 DATA = "DD/MM/YYYY"
 VALOR = "#,##0.00"
 CINZA = PatternFill("solid", fgColor="E2E8F0")

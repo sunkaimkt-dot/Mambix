@@ -3,8 +3,8 @@ import { empresaDoCookie } from "@/lib/marca";
 
 export type Papel = "plataforma" | "gestor" | "empresario";
 
-/* Funcao dentro da carteira do BPO. So existe para papel "gestor".
-   admin  = dono do BPO: cadastra, convida, mexe na marca
+/* Funcao dentro da equipe da Mambix. So existe para papel "gestor".
+   admin  = administrador: cadastra cliente, convida, mexe na marca
    operador = o dia a dia: lanca, edita, da baixa
    consulta = so le */
 export type Funcao = "admin" | "operador" | "consulta";

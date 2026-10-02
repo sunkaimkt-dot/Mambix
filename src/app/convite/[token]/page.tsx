@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase-server";
-import { urlDaLogo, variaveisDaMarca, MARCA_PADRAO, type Marca } from "@/lib/marca";
+import { urlDaLogo, carregarMarca } from "@/lib/marca";
 import AceitarConvite from "./AceitarConvite";
 import CriarConta from "./CriarConta";
 
@@ -11,8 +11,7 @@ import CriarConta from "./CriarConta";
  * nenhum, e o convite levava a uma pagina que exigia estar logado. Quem ja tem
  * conta so confirma o vinculo.
  *
- * A tela ja aparece com a marca de quem convidou -- quem foi chamado pela
- * Mambix nunca ve a marca da plataforma.
+ * A tela aparece com a marca da Mambix (a unica do sistema).
  */
 export const dynamic = "force-dynamic";
 
@@ -23,32 +22,24 @@ export default async function Convite({ params }: { params: Promise<{ token: str
 
   const { data } = await supabase.rpc("convite_publico", { p_token: token });
   const c = (Array.isArray(data) ? data[0] : data) as
-    | (Partial<Marca> & { valido: boolean; papel: string | null; funcao: string | null })
+    | { valido: boolean; papel: string | null; funcao: string | null }
     | null;
   const valido = c?.valido === true;
 
-  const marca: Marca = {
-    ...MARCA_PADRAO,
-    logo_url: c?.logo_url ?? null,
-    nome_exibido: c?.nome_exibido ?? null,
-    tagline: c?.tagline ?? null,
-    cor_primaria: c?.cor_primaria ?? MARCA_PADRAO.cor_primaria,
-    cor_positivo: c?.cor_positivo ?? MARCA_PADRAO.cor_positivo,
-    cor_negativo: c?.cor_negativo ?? MARCA_PADRAO.cor_negativo,
-  };
+  const marca = await carregarMarca();
   const logo = urlDaLogo(marca.logo_url);
 
   const tipoDeAcesso =
     c?.papel === "gestor"
       ? c?.funcao === "admin"
-        ? "administrador do BPO"
+        ? "administrador da equipe Mambix"
         : c?.funcao === "consulta"
-          ? "acesso de consulta no BPO"
-          : "operador do BPO"
+          ? "acesso de consulta na equipe Mambix"
+          : "operador da equipe Mambix"
       : "acesso de cliente";
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4" style={variaveisDaMarca(marca)}>
+    <main className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-lg">
         {logo ? (
           // eslint-disable-next-line @next/next/no-img-element

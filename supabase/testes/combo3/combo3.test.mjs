@@ -161,7 +161,7 @@ const mapaP = imp.mapearAutomatico("pagamentos", ["Vencimento", "Código", "Desc
 checa("mapeamento automático: 'Data de pagamento' não é confundida com vencimento", mapaP.vencimento === 0 && mapaP.data_pagamento === 4 && mapaP.codigo === 1, mapaP);
 
 const { default: lerExcel } = await import("read-excel-file/node");
-const abasModelo = await lerExcel(join(AQUI, "..", "..", "..", "public", "modelos", "modelo-importacao-nortex.xlsx"));
+const abasModelo = await lerExcel(join(AQUI, "..", "..", "..", "public", "modelos", "modelo-importacao-mambix.xlsx"));
 checa("planilha modelo: abas Instruções, Pagamentos, Receitas, Caixa Diário", abasModelo.map((a) => a.sheet).join("|") === "Instruções|Pagamentos|Receitas|Caixa Diário", abasModelo.map((a) => a.sheet));
 for (const [t, aba] of [["pagamentos", "Pagamentos"], ["receitas", "Receitas"], ["caixa_diario", "Caixa Diário"]]) {
   const m = imp.mapearAutomatico(t, imp.separarCabecalho(abasModelo.find((a) => a.sheet === aba).data).cabecalho);

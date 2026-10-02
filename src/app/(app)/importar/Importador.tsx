@@ -30,7 +30,7 @@ import { brl } from "@/lib/formato";
 
 const PEDACO = 25;
 const TIPOS: TipoImportacao[] = ["pagamentos", "receitas", "caixa_diario"];
-const MODELO = "/modelos/modelo-importacao-nortex.xlsx";
+const MODELO = "/modelos/modelo-importacao-mambix.xlsx";
 
 type Aba = { nome: string; dados: Celula[][] };
 type Rejeitada = { numero: number; original: Celula[]; motivo: string };

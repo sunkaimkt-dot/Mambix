@@ -2,41 +2,12 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import {
-  salvarGestor, salvarCliente, salvarClienteCompleto, salvarEmpresa, criarConvite, revogarConvite,
+  salvarCliente, salvarClienteCompleto, salvarEmpresa, criarConvite, revogarConvite,
   renomearEmpresa, alternarEmpresa, trocarFuncao,
 } from "@/lib/acoes";
 import { inputCls } from "@/components/ui";
 
 type Item = { id: string; nome: string };
-
-/** Cadastro de BPO financeiro (o consultor). Só a plataforma vê este formulário. */
-export function FormGestor() {
-  const router = useRouter();
-  const ref = useRef<HTMLFormElement>(null);
-  const [erro, setErro] = useState<string | null>(null);
-
-  return (
-    <form
-      ref={ref}
-      action={async (fd) => {
-        setErro(null);
-        const r = await salvarGestor(fd);
-        if (r.ok) { ref.current?.reset(); router.refresh(); }
-        else setErro(r.erro ?? "Não foi possível salvar.");
-      }}
-      className="flex flex-wrap items-end gap-2"
-    >
-      <input name="nome" required placeholder="Nome do BPO financeiro" className={`${inputCls} max-w-xs`} />
-      <button className="rounded-lg bg-marca px-4 py-1.5 text-sm font-semibold text-white hover:bg-marca-escura">
-        Adicionar BPO
-      </button>
-      <span className="text-xs text-slate-400">
-        Depois gere um convite para dar acesso a ele.
-      </span>
-      {erro && <span className="text-sm text-red-600">{erro}</span>}
-    </form>
-  );
-}
 
 /**
  * Cadastro de cliente novo em um passo so: nome do cliente, nome/CNPJ da
@@ -47,18 +18,13 @@ export function FormGestor() {
  * uma empresa no mesmo cliente, ou reconvidar/trocar o e-mail depois, usa os
  * formularios "Mais uma empresa" e "Dar acesso" logo abaixo.
  */
-export function FormClienteCompleto({ gestorId, gestores }: { gestorId: string | null; gestores: Item[] }) {
+export function FormClienteCompleto() {
   const router = useRouter();
   const ref = useRef<HTMLFormElement>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-
-  const escolheCarteira = gestorId === null;
-  if (escolheCarteira && gestores.length === 0) {
-    return <p className="text-sm text-slate-500">Cadastre um gestor primeiro.</p>;
-  }
 
   return (
     <div>
@@ -77,16 +43,6 @@ export function FormClienteCompleto({ gestorId, gestores }: { gestorId: string |
         }}
         className="flex flex-wrap items-end gap-2"
       >
-        {escolheCarteira ? (
-          <select name="gestor_id" required className={`${inputCls} max-w-xs`} defaultValue="">
-            <option value="" disabled>Carteira de…</option>
-            {gestores.map((g) => (
-              <option key={g.id} value={g.id}>{g.nome}</option>
-            ))}
-          </select>
-        ) : (
-          <input type="hidden" name="gestor_id" value={gestorId} />
-        )}
         <input name="nome_cliente" required placeholder="Nome do cliente" className={`${inputCls} max-w-xs`} />
         <input name="nome_empresa" required placeholder="Nome da empresa (CNPJ)" className={`${inputCls} max-w-xs`} />
         <input
@@ -102,7 +58,7 @@ export function FormClienteCompleto({ gestorId, gestores }: { gestorId: string |
         {erro && <span className="text-sm text-red-600">{erro}</span>}
       </form>
       <p className="mt-2 text-xs text-slate-400">
-        Já nasce com os 100 códigos e a loja matriz, e o convite de acesso pronto pra enviar.
+        Já nasce com os 100 códigos, a loja matriz e os bancos mais comuns, e o convite de acesso pronto pra enviar.
       </p>
 
       {link && (
@@ -132,17 +88,10 @@ export function FormClienteCompleto({ gestorId, gestores }: { gestorId: string |
   );
 }
 
-export function FormCliente({ gestorId, gestores }: { gestorId: string | null; gestores: Item[] }) {
+export function FormCliente() {
   const router = useRouter();
   const ref = useRef<HTMLFormElement>(null);
   const [erro, setErro] = useState<string | null>(null);
-
-  // A plataforma precisa dizer de qual carteira é o cliente; o gestor não,
-  // porque só existe uma carteira possível para ele.
-  const escolheCarteira = gestorId === null;
-  if (escolheCarteira && gestores.length === 0) {
-    return <p className="text-sm text-slate-500">Cadastre um gestor primeiro.</p>;
-  }
 
   return (
     <form
@@ -155,16 +104,6 @@ export function FormCliente({ gestorId, gestores }: { gestorId: string | null; g
       }}
       className="flex flex-wrap items-end gap-2"
     >
-      {escolheCarteira ? (
-        <select name="gestor_id" required className={`${inputCls} max-w-xs`} defaultValue="">
-          <option value="" disabled>Carteira de…</option>
-          {gestores.map((g) => (
-            <option key={g.id} value={g.id}>{g.nome}</option>
-          ))}
-        </select>
-      ) : (
-        <input type="hidden" name="gestor_id" value={gestorId} />
-      )}
       <input name="nome" required placeholder="Nome do cliente" className={`${inputCls} max-w-xs`} />
       <button className="rounded-lg bg-marca px-4 py-1.5 text-sm font-semibold text-white hover:bg-marca-escura">
         Adicionar cliente
@@ -202,27 +141,17 @@ export function FormEmpresa({ clientes }: { clientes: Item[] }) {
       <button className="rounded-lg bg-marca px-4 py-1.5 text-sm font-semibold text-white hover:bg-marca-escura">
         Adicionar empresa
       </button>
-      <span className="text-xs text-slate-400">Já nasce com os 100 códigos e a loja matriz.</span>
+      <span className="text-xs text-slate-400">Já nasce com os 100 códigos, a loja matriz e os bancos mais comuns.</span>
       {erro && <span className="text-sm text-red-600">{erro}</span>}
     </form>
   );
 }
 
 /**
- * Convite de acesso. A plataforma pode convidar gestor ou cliente final;
- * o gestor só convida clientes da própria carteira.
+ * Convite de acesso: para um cliente (vê e lança na empresa dele) ou para
+ * alguém da equipe da Mambix (com a função escolhida).
  */
-export function FormConvite({
-  clientes,
-  gestores,
-  podeConvidarGestor,
-  baseUrl,
-}: {
-  clientes: Item[];
-  gestores: Item[];
-  podeConvidarGestor: boolean;
-  baseUrl: string;
-}) {
+export function FormConvite({ clientes, baseUrl }: { clientes: Item[]; baseUrl: string }) {
   const router = useRouter();
   const ref = useRef<HTMLFormElement>(null);
   const [papel, setPapel] = useState<"empresario" | "gestor">("empresario");
@@ -231,11 +160,9 @@ export function FormConvite({
   const [copiado, setCopiado] = useState(false);
 
   const paraGestor = papel === "gestor";
-  if (clientes.length === 0 && gestores.length === 0) return null;
-
   return (
     <div>
-      {podeConvidarGestor && (
+      {(
         <div className="mb-3 flex gap-1.5">
           {(["empresario", "gestor"] as const).map((p) => (
             <button
@@ -246,7 +173,7 @@ export function FormConvite({
                 papel === p ? "bg-marca-clara font-medium text-marca" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              {p === "gestor" ? "BPO financeiro" : "Cliente final"}
+              {p === "gestor" ? "Equipe Mambix" : "Cliente"}
             </button>
           ))}
         </div>
@@ -278,12 +205,6 @@ export function FormConvite({
 
         {paraGestor ? (
           <>
-            <select name="gestor_id" required className={`${inputCls} max-w-xs`} defaultValue="">
-              <option value="" disabled>BPO…</option>
-              {gestores.map((g) => (
-                <option key={g.id} value={g.id}>{g.nome}</option>
-              ))}
-            </select>
             {/* Quem nao escolher entra como operador -- e o banco que garante. */}
             <select name="funcao" className={`${inputCls} max-w-[190px]`} defaultValue="operador">
               <option value="admin">Administrador — faz tudo</option>
@@ -291,6 +212,8 @@ export function FormConvite({
               <option value="consulta">Consulta — só lê</option>
             </select>
           </>
+        ) : clientes.length === 0 ? (
+          <span className="text-sm text-slate-500">Cadastre um cliente primeiro.</span>
         ) : (
           <select name="cliente_id" required className={`${inputCls} max-w-xs`} defaultValue="">
             <option value="" disabled>Cliente…</option>
@@ -309,7 +232,7 @@ export function FormConvite({
       {link && (
         <div className="mt-3 rounded-lg border border-marca-clara bg-marca-clara p-3">
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-marca-escura">
-            Convite de {paraGestor ? "gestor" : "cliente"} criado — envie este link
+            Convite {paraGestor ? "da equipe" : "de cliente"} criado — envie este link
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <code className="break-all rounded bg-white px-2 py-1 text-xs text-slate-700">{link}</code>
@@ -443,7 +366,7 @@ const DESCRICAO_DA_FUNCAO = {
 } as const;
 
 /**
- * Linha de uma pessoa da equipe do BPO, com a função dela.
+ * Linha de uma pessoa da equipe da Mambix, com a função dela.
  *
  * O admin troca a função aqui mesmo. Ele nao aparece para si proprio com o
  * seletor habilitado: quem muda o proprio nivel de acesso pode se promover, e o

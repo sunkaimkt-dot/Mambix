@@ -14,16 +14,16 @@ export type Marca = {
   cor_negativo: string | null;
 };
 
-/* Ultimo recurso, para o caso de o banco nao responder. Espelha a linha de
-   plataforma que esta gravada no banco -- se as duas divergirem, a tela pisca
+/* Ultimo recurso, para o caso de o banco nao responder. Espelha a marca da
+   Mambix gravada no banco (migration 0121) -- se as duas divergirem, a tela pisca
    uma cor no primeiro render e outra depois. */
 export const MARCA_PADRAO: Marca = {
   logo_url: null,
   logo_negativo_url: null,
-  nome_exibido: "Nortex",
-  tagline: "BPO Financeiro",
-  cor_primaria: "#1B4F7A",
-  cor_secundaria: "#153F62",
+  nome_exibido: "MAMBIX",
+  tagline: "Gestão financeira",
+  cor_primaria: "#047857",
+  cor_secundaria: "#059669",
   cor_positivo: "#047857",
   cor_negativo: "#DC2626",
 };
@@ -34,10 +34,6 @@ export const MARCA_PADRAO: Marca = {
    De quebra resolve um incomodo antigo: ao abrir uma pagina sem ?empresa= na
    URL, o sistema voltava para a primeira empresa da lista. */
 export const COOKIE_EMPRESA = "empresa_ativa";
-
-/* Lembra por qual consultor a pessoa entrou, para a sessao expirada devolver
-   ela para /mambix em vez da porta da Nortex. */
-export const COOKIE_CONSULTOR = "consultor";
 
 /* O banco so aceita #RRGGBB (constraint cores_hexadecimais), mas estes valores
    entram direto num atributo style: confere-se de novo antes de injetar. */

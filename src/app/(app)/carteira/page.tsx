@@ -3,16 +3,16 @@ import { meuAcesso } from "@/lib/contexto";
 import { supabaseServer } from "@/lib/supabase-server";
 import { Cartao, Vazio } from "@/components/ui";
 import {
-  FormGestor, FormClienteCompleto, FormCliente, FormEmpresa, FormConvite,
+  FormClienteCompleto, FormCliente, FormEmpresa, FormConvite,
   BotaoRevogar, EmpresaChip, LinhaDaEquipe,
 } from "./Formularios";
 
 /**
- * Carteira: gestores, clientes, empresas e convites.
+ * Clientes da Mambix: clientes, empresas, equipe e convites.
  *
- * Todas as consultas aqui sao iguais para todo mundo -- quem filtra e o RLS.
- * A plataforma recebe a base inteira; o gestor recebe so a carteira dele e nem
- * sabe que existem outras.
+ * Desde 02/10/2026 o sistema tem um BPO so -- a Mambix. O dono (papel
+ * plataforma) e a equipe (papel gestor) veem a mesma lista; quem filtra
+ * continua sendo o RLS.
  */
 export default async function Carteira() {
   const { papel, funcao } = await meuAcesso();
@@ -20,46 +20,35 @@ export default async function Carteira() {
   if (papel === "empresario") {
     return (
       <main className="p-6">
-        <h1 className="text-lg font-bold">Carteira</h1>
-        <p className="mt-2 text-sm text-slate-500">Esta área é do seu consultor financeiro.</p>
+        <h1 className="text-lg font-bold">Clientes</h1>
+        <p className="mt-2 text-sm text-slate-500">Esta área é da equipe da Mambix.</p>
       </main>
     );
   }
 
-  const ehPlataforma = papel === "plataforma";
   /* Espelha administro_a_carteira() do banco. Serve para a tela nao oferecer o
      que o Postgres vai recusar -- a regra que vale continua sendo a de la. */
-  const souAdmin = ehPlataforma || funcao === "admin";
+  const souAdmin = papel === "plataforma" || funcao === "admin";
   const supabase = await supabaseServer();
   const h = await headers();
   const baseUrl = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? ""}`;
   const { data: sessao } = await supabase.auth.getUser();
 
-  const [gestoresRes, clientesRes, empresasRes, convitesRes, perfilRes] = await Promise.all([
-    supabase.from("gestores").select("id, nome, ativo").order("nome"),
-    supabase.from("clientes").select("id, nome, gestor_id").order("nome"),
+  const [clientesRes, empresasRes, convitesRes, equipeRes] = await Promise.all([
+    supabase.from("clientes").select("id, nome").order("nome"),
     supabase.from("empresas").select("id, nome, cliente_id, ativa").order("nome"),
     supabase
       .from("convites")
-      .select("id, email, papel, funcao, cliente_id, gestor_id, expira_em")
+      .select("id, email, papel, funcao, cliente_id, expira_em")
       .is("aceito_em", null)
       .order("criado_em", { ascending: false }),
-    // Filtrar por user_id e obrigatorio: a plataforma le todos os perfis.
-    supabase.from("perfis").select("gestor_id").eq("user_id", sessao.user?.id ?? "").maybeSingle(),
+    supabase.from("perfis").select("user_id, nome, papel, funcao").eq("papel", "gestor").order("nome"),
   ]);
 
-  // Equipe do BPO: o RLS ja limita a quem e da mesma carteira.
-  const { data: equipe } = await supabase
-    .from("perfis")
-    .select("user_id, nome, papel, funcao, gestor_id")
-    .eq("papel", "gestor")
-    .order("nome");
-
-  const gestores = gestoresRes.data ?? [];
   const clientes = clientesRes.data ?? [];
   const empresas = empresasRes.data ?? [];
   const convites = convitesRes.data ?? [];
-  const meuGestorId = (perfilRes.data?.gestor_id as string | null) ?? null;
+  const equipe = equipeRes.data ?? [];
 
   const empresasPor = new Map<string, { id: string; nome: string; ativa: boolean }[]>();
   for (const e of empresas) {
@@ -67,48 +56,26 @@ export default async function Carteira() {
     arr.push({ id: e.id, nome: e.nome, ativa: e.ativa });
     empresasPor.set(e.cliente_id, arr);
   }
-  const clientesPor = new Map<string, typeof clientes>();
-  for (const c of clientes) {
-    const arr = clientesPor.get(c.gestor_id) ?? [];
-    arr.push(c);
-    clientesPor.set(c.gestor_id, arr);
-  }
   const nomeCliente = new Map(clientes.map((c) => [c.id, c.nome]));
-  const nomeGestor = new Map(gestores.map((g) => [g.id, g.nome]));
-
-  const contaEmpresas = (gestorId: string) =>
-    (clientesPor.get(gestorId) ?? []).reduce((s, c) => s + (empresasPor.get(c.id)?.length ?? 0), 0);
+  const nomesDeFuncao: Record<string, string> = { admin: "administrador", operador: "operador", consulta: "consulta" };
 
   return (
     <main className="p-6">
       <div className="mb-6">
-        <h1 className="text-lg font-bold">{ehPlataforma ? "Plataforma" : "Minha carteira"}</h1>
-        <p className="text-sm text-slate-500">
-          {ehPlataforma
-            ? "Todos os BPOs e suas carteiras."
-            : "Seus clientes e as empresas de cada um."}
-        </p>
+        <h1 className="text-lg font-bold">Clientes</h1>
+        <p className="text-sm text-slate-500">Os clientes da Mambix, as empresas de cada um e a equipe.</p>
       </div>
-
-      {ehPlataforma && (
-        <Cartao className="mb-6 p-4">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Novo BPO financeiro
-          </p>
-          <FormGestor />
-        </Cartao>
-      )}
 
       {souAdmin ? (
         <>
           <Cartao className="mb-6 p-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Novo cliente</p>
-            <FormClienteCompleto gestorId={ehPlataforma ? null : meuGestorId} gestores={gestores} />
+            <FormClienteCompleto />
           </Cartao>
 
           <details className="group mb-6 rounded-xl border border-slate-200 bg-white open:pb-4">
             <summary className="cursor-pointer select-none px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-700">
-              Mais opções — cliente com mais de uma empresa, reenviar acesso, ou convidar outro BPO
+              Mais opções — cliente com mais de uma empresa, reenviar acesso, convidar alguém da equipe
             </summary>
 
             <div className="space-y-6 px-4 pt-1">
@@ -125,25 +92,16 @@ export default async function Carteira() {
 
               <div>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Reenviar acesso ou convidar {ehPlataforma ? "outro BPO" : "outra pessoa"}
+                  Reenviar acesso a um cliente ou convidar alguém da equipe
                 </p>
-                {clientes.length === 0 && gestores.length === 0 ? (
-                  <p className="text-sm text-slate-500">Cadastre um BPO ou cliente primeiro.</p>
-                ) : (
-                  <FormConvite
-                    clientes={clientes}
-                    gestores={gestores}
-                    podeConvidarGestor={ehPlataforma}
-                    baseUrl={baseUrl}
-                  />
-                )}
+                <FormConvite clientes={clientes} baseUrl={baseUrl} />
               </div>
 
               <div>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Cliente sem empresa ainda
                 </p>
-                <FormCliente gestorId={ehPlataforma ? null : meuGestorId} gestores={gestores} />
+                <FormCliente />
               </div>
             </div>
           </details>
@@ -151,19 +109,19 @@ export default async function Carteira() {
       ) : (
         <Cartao className="mb-6 p-4">
           <p className="text-sm text-slate-500">
-            Cadastro de clientes, empresas e convites é do administrador do seu BPO. Você continua com acesso
-            normal aos lançamentos e relatórios.
+            Cadastro de clientes, empresas e convites é do administrador da Mambix. Você continua com acesso normal
+            aos lançamentos e relatórios.
           </p>
         </Cartao>
       )}
 
-      {(equipe?.length ?? 0) > 0 && !ehPlataforma && (
+      {equipe.length > 0 && (
         <Cartao className="mb-6">
           <p className="border-b border-slate-100 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Equipe
+            Equipe Mambix
           </p>
           <ul className="divide-y divide-slate-100">
-            {(equipe ?? []).map((p) => (
+            {equipe.map((p) => (
               <LinhaDaEquipe
                 key={p.user_id}
                 userId={p.user_id}
@@ -179,26 +137,21 @@ export default async function Carteira() {
 
       {convites.length > 0 && (
         <Cartao className="mb-6 p-4">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Convites pendentes
-          </p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Convites pendentes</p>
           <ul className="space-y-1.5 text-sm">
             {convites.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center gap-2">
                 <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
-                  {c.papel === "gestor" ? "gestor" : "cliente"}
+                  {c.papel === "gestor" ? `equipe · ${nomesDeFuncao[c.funcao ?? "operador"]}` : "cliente"}
                 </span>
                 <span className="font-medium">{c.email}</span>
-                <span className="text-slate-500">
-                  →{" "}
-                  {c.papel === "gestor"
-                    ? nomeGestor.get(c.gestor_id ?? "") ?? "—"
-                    : nomeCliente.get(c.cliente_id ?? "") ?? "—"}
-                </span>
+                {c.papel !== "gestor" && (
+                  <span className="text-slate-500">→ {nomeCliente.get(c.cliente_id ?? "") ?? "—"}</span>
+                )}
                 <span className="text-xs text-slate-400">
                   expira {new Date(c.expira_em).toLocaleDateString("pt-BR")}
                 </span>
-                <BotaoRevogar id={c.id} />
+                {souAdmin && <BotaoRevogar id={c.id} />}
               </li>
             ))}
           </ul>
@@ -207,45 +160,9 @@ export default async function Carteira() {
 
       <Cartao>
         <p className="border-b border-slate-100 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {ehPlataforma ? "BPOs e carteiras" : "Clientes e empresas"}
+          Clientes e empresas
         </p>
-
-        {ehPlataforma ? (
-          gestores.length === 0 ? (
-            <Vazio texto="Nenhum gestor cadastrado ainda." />
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {gestores.map((g) => (
-                <li key={g.id} className="px-4 py-3">
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <span className="font-semibold">{g.nome}</span>
-                    <span className="text-xs text-slate-400">
-                      {(clientesPor.get(g.id) ?? []).length} cliente(s) · {contaEmpresas(g.id)} empresa(s)
-                    </span>
-                    {!g.ativo && (
-                      <span className="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-red-700">
-                        inativo
-                      </span>
-                    )}
-                  </div>
-                  <ul className="mt-1.5 space-y-1">
-                    {(clientesPor.get(g.id) ?? []).map((c) => (
-                      <li key={c.id} className="flex flex-wrap items-center gap-1.5 pl-3 text-sm">
-                        <span className="text-slate-600">{c.nome}</span>
-                        {(empresasPor.get(c.id) ?? []).map((e) => (
-                          <EmpresaChip key={e.id} id={e.id} nome={e.nome} ativa={e.ativa} />
-                        ))}
-                      </li>
-                    ))}
-                    {(clientesPor.get(g.id) ?? []).length === 0 && (
-                      <li className="pl-3 text-xs text-slate-400">sem cliente cadastrado</li>
-                    )}
-                  </ul>
-                </li>
-              ))}
-            </ul>
-          )
-        ) : clientes.length === 0 ? (
+        {clientes.length === 0 ? (
           <Vazio texto="Nenhum cliente cadastrado ainda." />
         ) : (
           <ul className="divide-y divide-slate-100">

@@ -2,14 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-client";
-import { COOKIE_CONSULTOR } from "@/lib/marca-comum";
 
-/**
- * @param consultor apelido de quem "dono" da porta por onde a pessoa entrou.
- *   Fica gravado em cookie para que a proxima visita -- e a sessao que expirar
- *   -- caiam na tela do consultor certo, e nao na porta da plataforma.
- */
-export default function FormLogin({ consultor }: { consultor?: string }) {
+export default function FormLogin() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -20,16 +14,20 @@ export default function FormLogin({ consultor }: { consultor?: string }) {
     e.preventDefault();
     setErro(null);
     setCarregando(true);
-    /* A porta de AGORA manda. Entrar por /admin apaga a lembranca de qualquer
-       consultor -- senao quem entrasse uma vez por /mambix veria a marca dela
-       para sempre, inclusive na porta da plataforma. */
-    document.cookie = consultor
-      ? `${COOKIE_CONSULTOR}=${consultor}; path=/; max-age=31536000; samesite=lax`
-      : `${COOKIE_CONSULTOR}=; path=/; max-age=0; samesite=lax`;
     const supabase = supabaseBrowser();
     const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
     setCarregando(false);
-    if (error) { setErro("E-mail ou senha inválidos."); return; }
+    if (error) {
+      // A mensagem antiga dizia "senha invalida" para QUALQUER erro -- inclusive
+      // banco fora do ar ou chave errada na Vercel, o que custou um dia de
+      // investigacao em 02/10. Credencial errada continua com a frase de sempre.
+      setErro(
+        /invalid login|invalid credentials/i.test(error.message)
+          ? "E-mail ou senha inválidos."
+          : `Não foi possível entrar: ${error.message}`
+      );
+      return;
+    }
     router.push("/dashboard");
     router.refresh();
   }

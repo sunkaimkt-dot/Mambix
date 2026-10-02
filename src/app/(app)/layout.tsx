@@ -9,8 +9,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  // Sessao expirada volta pela porta por onde a pessoa entrou -- o cliente da
-  // Mambix nao deve cair na tela da Nortex.
   if (!user) redirect(await portaDeEntrada());
 
   const { data: perfil } = await supabase
@@ -19,7 +17,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq("user_id", user.id)
     .maybeSingle();
 
-  // Sem argumento: a marca sai da empresa que estiver no cookie.
   const marca = await carregarMarca();
   const logo = urlDaLogo(marca.logo_url);
 
@@ -48,9 +45,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <p className="truncate text-sm font-medium">{perfil?.nome ?? user.email}</p>
           <p className="mb-2 text-xs text-slate-500">
             {perfil?.papel === "plataforma"
-              ? "Leads de Sucesso"
+              ? "Mambix · dono"
               : perfil?.papel === "gestor"
-                ? `BPO · ${
+                ? `Equipe Mambix · ${
                     perfil?.funcao === "admin"
                       ? "administrador"
                       : perfil?.funcao === "consulta"

@@ -11,7 +11,6 @@ const ABAS = [
   { chave: "recebimento", rotulo: "Tipos de recebimento", tabela: "tipos_recebimento" },
   { chave: "pagamento", rotulo: "Formas de pagamento", tabela: "formas_pagamento" },
   { chave: "venda", rotulo: "Tipos de venda (caixa)", tabela: "tipos_venda" },
-  { chave: "familia", rotulo: "Orçamento familiar", tabela: "codigos_familia" },
 ] as const;
 
 export default async function Codigos({

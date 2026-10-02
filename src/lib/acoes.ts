@@ -36,7 +36,7 @@ function numero(fd: FormData, k: string) {
 }
 function amigavel(msg: string) {
   if (msg.includes("row-level security")) {
-    return "Você não tem permissão para gravar nesta empresa. Fale com o consultor responsável.";
+    return "Você não tem permissão para esta operação. Fale com a Mambix.";
   }
   if (msg.includes("violates not-null")) return "Preencha todos os campos obrigatórios.";
   if (msg.includes("duplicate key")) return "Este lançamento já existe.";
@@ -250,34 +250,21 @@ export async function salvarCodigos(fd: FormData): Promise<Resultado> {
 }
 
 // ============================================================
-// Carteira do gestor
+// Clientes da Mambix
 // ============================================================
 
 /**
- * Cadastra um gestor financeiro (nivel 2 da hierarquia).
- * Exclusivo da plataforma: e ela que vende o sistema para os gestores.
- * O RLS ja barra qualquer outro papel, isto aqui so devolve mensagem decente.
+ * Carteira onde o cliente novo entra. A equipe usa a propria (que e a da
+ * Mambix); o dono, que nao tem carteira no perfil, cai na carteira principal.
+ * Desde 02/10/2026 so existe uma -- ver migration 0121.
  */
-export async function salvarGestor(fd: FormData): Promise<Resultado> {
-  const nome = texto(fd, "nome");
-  if (!nome) return { ok: false, erro: "Informe o nome do gestor." };
-
-  const supabase = await supabaseServer();
-  const { data: sessao } = await supabase.auth.getUser();
-  const { data: perfil } = await supabase
-    .from("perfis")
-    .select("papel")
-    .eq("user_id", sessao.user?.id ?? "")
-    .maybeSingle();
-
-  if (perfil?.papel !== "plataforma") {
-    return { ok: false, erro: "Apenas a Leads de Sucesso pode cadastrar gestores." };
-  }
-
-  const { error } = await supabase.from("gestores").insert({ nome });
-  if (error) return { ok: false, erro: amigavel(error.message) };
-  revalidatePath("/carteira");
-  return { ok: true };
+async function carteiraDaMambix(
+  supabase: Awaited<ReturnType<typeof supabaseServer>>,
+  gestorDoPerfil: string | null | undefined
+): Promise<string | null> {
+  if (gestorDoPerfil) return gestorDoPerfil;
+  const { data } = await supabase.rpc("gestor_principal");
+  return (data as string | null) ?? null;
 }
 
 export async function salvarCliente(fd: FormData): Promise<Resultado> {
@@ -294,17 +281,8 @@ export async function salvarCliente(fd: FormData): Promise<Resultado> {
     .eq("user_id", sessao.user?.id ?? "")
     .maybeSingle();
 
-  // A plataforma escolhe a carteira; o gestor so cria dentro da propria.
-  const gestorId = perfil?.papel === "plataforma" ? texto(fd, "gestor_id") : perfil?.gestor_id;
-  if (!gestorId) {
-    return {
-      ok: false,
-      erro:
-        perfil?.papel === "plataforma"
-          ? "Selecione de qual BPO é este cliente."
-          : "Sua conta não está vinculada a nenhuma carteira.",
-    };
-  }
+  const gestorId = await carteiraDaMambix(supabase, perfil?.gestor_id as string | null);
+  if (!gestorId) return { ok: false, erro: "A carteira da Mambix não foi encontrada. Rode a migration 0121." };
 
   const { error } = await supabase.from("clientes").insert({ gestor_id: gestorId, nome });
   if (error) return { ok: false, erro: amigavel(error.message) };
@@ -340,17 +318,8 @@ export async function salvarClienteCompleto(
     .eq("user_id", sessao.user?.id ?? "")
     .maybeSingle();
 
-  // A plataforma escolhe a carteira; o gestor so cria dentro da propria.
-  const gestorId = perfil?.papel === "plataforma" ? texto(fd, "gestor_id") : perfil?.gestor_id;
-  if (!gestorId) {
-    return {
-      ok: false,
-      erro:
-        perfil?.papel === "plataforma"
-          ? "Selecione de qual BPO é este cliente."
-          : "Sua conta não está vinculada a nenhuma carteira.",
-    };
-  }
+  const gestorId = await carteiraDaMambix(supabase, perfil?.gestor_id as string | null);
+  if (!gestorId) return { ok: false, erro: "A carteira da Mambix não foi encontrada. Rode a migration 0121." };
 
   const { data: cliente, error: erroCliente } = await supabase
     .from("clientes")
@@ -408,7 +377,7 @@ export async function salvarEmpresa(fd: FormData): Promise<Resultado> {
  * Gera o link de convite. E a unica porta de entrada na hierarquia -- quem se
  * cadastra sem convite fica sem vinculo e nao enxerga nada.
  *
- * Convite de GESTOR aponta para um gestor e nao tem cliente; convite de CLIENTE
+ * Convite de EQUIPE aponta para a carteira da Mambix e nao tem cliente; convite de CLIENTE
  * FINAL aponta para um cliente. A constraint destino_coerente, no banco, recusa
  * qualquer combinacao fora disso.
  */
@@ -416,8 +385,7 @@ export async function criarConvite(fd: FormData): Promise<{ ok: boolean; erro?: 
   const email = texto(fd, "email");
   const papel = texto(fd, "papel") === "gestor" ? "gestor" : "empresario";
   const clienteId = texto(fd, "cliente_id");
-  const gestorId = texto(fd, "gestor_id");
-  // Quem entra no BPO entra com uma funcao. Sem escolha explicita, o banco
+  // Quem entra na equipe entra com uma funcao. Sem escolha explicita, o banco
   // aplica "operador" -- a mais limitada das duas que trabalham.
   const funcaoPedida = texto(fd, "funcao");
   const funcao =
@@ -428,12 +396,19 @@ export async function criarConvite(fd: FormData): Promise<{ ok: boolean; erro?: 
         : null;
 
   if (!email) return { ok: false, erro: "Informe o e-mail de quem vai receber o convite." };
-  if (papel === "gestor" && !gestorId) return { ok: false, erro: "Selecione o gestor." };
   if (papel === "empresario" && !clienteId) return { ok: false, erro: "Selecione o cliente." };
 
   const token = crypto.randomUUID().replace(/-/g, "");
   const supabase = await supabaseServer();
   const { data: sessao } = await supabase.auth.getUser();
+  const { data: perfil } = await supabase
+    .from("perfis")
+    .select("gestor_id")
+    .eq("user_id", sessao.user?.id ?? "")
+    .maybeSingle();
+  // Convite de equipe entra sempre na carteira da Mambix.
+  const gestorId = papel === "gestor" ? await carteiraDaMambix(supabase, perfil?.gestor_id as string | null) : null;
+  if (papel === "gestor" && !gestorId) return { ok: false, erro: "A carteira da Mambix não foi encontrada." };
 
   const { error } = await supabase.from("convites").insert({
     token,

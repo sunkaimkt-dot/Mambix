@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { carregarMarca, variaveisDaMarca, MARCA_PADRAO } from "@/lib/marca";
 import "./globals.css";
 
-/* O nome da aba tambem e white-label: quem abre o sistema pela conta de um
-   consultor le a marca dele, nao a do produto. */
+/* O nome da aba sai da marca da Mambix, editavel na tela Marca e cores. */
 export async function generateMetadata(): Promise<Metadata> {
   const marca = await carregarMarca();
   const nome = marca.nome_exibido ?? MARCA_PADRAO.nome_exibido;

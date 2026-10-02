@@ -34,24 +34,23 @@ const GRUPOS: Grupo[] = [
     itens: [
       { href: "/evolucao-dre", rotulo: "Evolução DRE", pronto: true },
       { href: "/evolucao-dfc", rotulo: "Evolução DFC", pronto: true },
-      { href: "/graficos", rotulo: "Gráficos", pronto: false },
+      { href: "/graficos", rotulo: "Gráficos", pronto: true },
       { href: "/simulador", rotulo: "Simulador de cenários", pronto: true },
-      { href: "/familia", rotulo: "DRE Família", pronto: false },
     ],
   },
   {
-    titulo: "Administração",
+    // Cliente tambem lanca, entao tambem cuida dos bancos e lojas da empresa dele.
+    titulo: "Cadastros",
+    itens: [{ href: "/bancos", rotulo: "Bancos e lojas", pronto: true }],
+  },
+  {
+    titulo: "Mambix",
     soGestor: true,
     itens: [
-      { href: "/carteira", rotulo: "Minha carteira", pronto: true },
+      { href: "/carteira", rotulo: "Clientes e equipe", pronto: true },
       { href: "/codigos", rotulo: "Códigos e listas", pronto: true },
+      { href: "/marca", rotulo: "Marca e cores", pronto: true },
     ],
-  },
-  {
-    // Fica fora do grupo acima porque o cliente final tambem personaliza a
-    // propria marca -- o RLS e que limita ate onde ele mexe.
-    titulo: "Personalização",
-    itens: [{ href: "/marca", rotulo: "Marca e cores", pronto: true }],
   },
 ];
 
@@ -123,9 +122,11 @@ export default function Navegacao({ papel = "empresario" }: { papel?: "plataform
         </div>
       ))}
 
-      <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-400">
-        Itens com cadeado estão em construção e serão liberados nas próximas etapas.
-      </p>
+      {grupos.some((g) => g.itens.some((i) => !i.pronto)) && (
+        <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-400">
+          Itens com cadeado estão em construção e serão liberados nas próximas etapas.
+        </p>
+      )}
     </nav>
   );
 }
