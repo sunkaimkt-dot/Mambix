@@ -49,7 +49,7 @@ export default async function Codigos({
         ctx={ctx}
       />
 
-      <div className="mb-4 flex flex-wrap gap-1.5">
+      <div data-tour="abas" className="mb-4 flex flex-wrap gap-1.5">
         {ABAS.map((a) => {
           const qs = new URLSearchParams(qsBase);
           qs.set("aba", a.chave);
@@ -68,7 +68,7 @@ export default async function Codigos({
         })}
       </div>
 
-      <Cartao className="p-4">
+      <Cartao tour="lista" className="p-4">
         <p className="mb-4 text-xs leading-relaxed text-slate-500">
           Os grupos são fixos — é o que mantém a DRE comparável entre empresas. Dentro de cada grupo,
           renomeie à vontade. Campo em branco some das listas de lançamento.

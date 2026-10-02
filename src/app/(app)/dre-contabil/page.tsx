@@ -77,11 +77,11 @@ export default async function DREContabil({
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <Cartao className="p-4">
+        <Cartao tour="demonstrativo" className="p-4">
           <DemonstrativoContabil linhas={linhas} base={d.receitaBruta} />
         </Cartao>
         <div className="space-y-4">
-          <Cartao className="p-4 avoid-break">
+          <Cartao tour="equilibrio" className="p-4 avoid-break">
             <Equilibrio
               e={d.equilibrio}
               rotuloFixos="Despesas operacionais"

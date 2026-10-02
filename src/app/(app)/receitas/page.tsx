@@ -50,7 +50,7 @@ export default async function Receitas({
         ctx={ctx}
       />
 
-      <Cartao className="mb-6 p-4">
+      <Cartao tour="form" className="mb-6 p-4">
         <FormReceita
           empresaId={ctx.empresaId}
           lojas={ctx.lojas}
@@ -62,7 +62,7 @@ export default async function Receitas({
       </Cartao>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_260px]">
-        <Cartao className="overflow-hidden">
+        <Cartao tour="lista" className="overflow-hidden">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
             <p className="text-sm font-semibold">Entradas do mês</p>
             <p className="text-sm font-bold text-positivo">{brl(total)}</p>
@@ -94,7 +94,7 @@ export default async function Receitas({
           {lista.length === 0 && <Vazio texto="Nenhuma entrada lançada neste mês." />}
         </Cartao>
 
-        <Cartao className="h-fit p-4">
+        <Cartao tour="resumo" className="h-fit p-4">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Por tipo de recebimento</p>
           <ul className="space-y-1.5 text-sm">
             {porTipo.map((t) => (

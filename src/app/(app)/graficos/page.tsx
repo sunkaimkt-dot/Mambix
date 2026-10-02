@@ -59,7 +59,7 @@ export default async function Graficos({
     <main className="p-6">
       <Cabecalho titulo="Gráficos" subtitulo={`${nomeInd} — referência ${MESES[ctx.mes - 1]}/${ctx.ano}`} ctx={ctx} />
 
-      <div className="mb-6 flex gap-1.5">
+      <div data-tour="indicador" className="mb-6 flex gap-1.5">
         {(["faturamento", "lucro"] as const).map((i) => (
           <Link
             key={i}
@@ -80,7 +80,7 @@ export default async function Graficos({
         </p>
       )}
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div data-tour="comparativos" className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Indicadores titulo={`${nomeInd} — ${ref}`} valor={comp.atual} />
         <Indicadores titulo={`x mês anterior (${mesAntRef})`} valor={comp.mesAnterior} variacao={comp.varMesAnterior} />
         <Indicadores titulo={`x mesmo mês do ano anterior (${anoAntRef})`} valor={comp.mesmoMesAnoAnterior} variacao={comp.varAnoAnterior} />
@@ -92,20 +92,20 @@ export default async function Graficos({
         />
       </div>
 
-      <Cartao className="mb-6 p-4">
+      <Cartao tour="colunas" className="mb-6 p-4">
         <h2 className="mb-3 text-sm font-semibold">
           {nomeInd} mês a mês — {ctx.ano} x {ctx.ano - 1}
         </h2>
         <ColunasPorMes series={anoContraAno} />
       </Cartao>
 
-      <Cartao className="mb-6 p-4">
+      <Cartao tour="linhas" className="mb-6 p-4">
         <h2 className="mb-3 text-sm font-semibold">{nomeInd} — anos anteriores</h2>
         <LinhasPorAno series={todosAnos} />
       </Cartao>
 
       {ind === "faturamento" && (
-        <div className="mb-6 grid gap-6 xl:grid-cols-2">
+        <div data-tour="ticket" className="mb-6 grid gap-6 xl:grid-cols-2">
           <Cartao className="p-4">
             <h2 className="mb-1 text-sm font-semibold">Ticket médio</h2>
             <p className="mb-3 text-xs text-slate-500">
@@ -135,7 +135,7 @@ export default async function Graficos({
         </div>
       )}
 
-      <Cartao className="overflow-x-auto">
+      <Cartao tour="tabela" className="overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">

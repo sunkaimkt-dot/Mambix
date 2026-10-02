@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { supabaseServer } from "@/lib/supabase-server";
 import { carregarMarca, urlDaLogo, MARCA_PADRAO, portaDeEntrada } from "@/lib/marca";
 import Navegacao from "@/components/Navegacao";
+import TourGuiado from "@/components/TourGuiado";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await supabaseServer();
@@ -18,6 +19,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .maybeSingle();
 
   const marca = await carregarMarca();
+  // Telas cujo tour a pessoa ja viu (o tour abre sozinho so no primeiro acesso).
+  const toursRes = await supabase.from("tours_vistos").select("tela").eq("user_id", user.id);
   const logo = urlDaLogo(marca.logo_url);
 
   return (
@@ -64,6 +67,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
       <div className="min-w-0 flex-1">{children}</div>
+      <TourGuiado
+        vistos={(toursRes.data ?? []).map((t) => t.tela as string)}
+        papel={(perfil?.papel as "plataforma" | "gestor" | "empresario") ?? "empresario"}
+        autoInicio={!toursRes.error}
+      />
     </div>
   );
 }

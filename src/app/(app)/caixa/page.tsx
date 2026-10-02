@@ -39,7 +39,7 @@ export default async function Caixa({
         subtitulo={`${MESES[ctx.mes - 1]}/${ctx.ano} — fechamento de vendas por dia (clique numa célula para editar)`}
         ctx={ctx}
       />
-      <Cartao className="overflow-hidden">
+      <Cartao tour="grade" className="overflow-hidden">
         <GradeCaixa
           empresaId={ctx.empresaId}
           lojaId={loja}

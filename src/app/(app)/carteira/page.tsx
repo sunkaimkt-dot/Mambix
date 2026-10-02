@@ -1,3 +1,4 @@
+import BotaoTour from "@/components/BotaoTour";
 import { headers } from "next/headers";
 import { meuAcesso } from "@/lib/contexto";
 import { supabaseServer } from "@/lib/supabase-server";
@@ -62,18 +63,21 @@ export default async function Carteira() {
   return (
     <main className="p-6">
       <div className="mb-6">
-        <h1 className="text-lg font-bold">Clientes</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-lg font-bold">Clientes</h1>
+          <BotaoTour />
+        </div>
         <p className="text-sm text-slate-500">Os clientes da Mambix, as empresas de cada um e a equipe.</p>
       </div>
 
       {souAdmin ? (
         <>
-          <Cartao className="mb-6 p-4">
+          <Cartao tour="novo-cliente" className="mb-6 p-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Novo cliente</p>
             <FormClienteCompleto />
           </Cartao>
 
-          <details className="group mb-6 rounded-xl border border-slate-200 bg-white open:pb-4">
+          <details data-tour="mais-opcoes" className="group mb-6 rounded-xl border border-slate-200 bg-white open:pb-4">
             <summary className="cursor-pointer select-none px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-700">
               Mais opções — cliente com mais de uma empresa, reenviar acesso, convidar alguém da equipe
             </summary>
@@ -116,7 +120,7 @@ export default async function Carteira() {
       )}
 
       {equipe.length > 0 && (
-        <Cartao className="mb-6">
+        <Cartao tour="equipe" className="mb-6">
           <p className="border-b border-slate-100 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
             Equipe Mambix
           </p>
@@ -136,7 +140,7 @@ export default async function Carteira() {
       )}
 
       {convites.length > 0 && (
-        <Cartao className="mb-6 p-4">
+        <Cartao tour="convites" className="mb-6 p-4">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Convites pendentes</p>
           <ul className="space-y-1.5 text-sm">
             {convites.map((c) => (
@@ -158,7 +162,7 @@ export default async function Carteira() {
         </Cartao>
       )}
 
-      <Cartao>
+      <Cartao tour="clientes">
         <p className="border-b border-slate-100 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
           Clientes e empresas
         </p>

@@ -79,7 +79,7 @@ export default async function Painel({
     <main className="p-6">
       <Cabecalho titulo="Painel" subtitulo={`${MESES[ctx.mes - 1]} de ${ctx.ano} — ${ctx.empresaNome}`} ctx={ctx} />
 
-      <section className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <section data-tour="indicadores" className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {cards.map((c) => (
           <div key={c.rotulo} className="rounded-xl border border-slate-200 bg-white p-4">
             <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">{c.rotulo}</p>
@@ -89,7 +89,7 @@ export default async function Painel({
       </section>
 
       <section className="mb-8 grid gap-6 xl:grid-cols-2">
-        <Cartao className="p-4">
+        <Cartao tour="grafico-caixa" className="p-4">
           <h2 className="text-sm font-semibold">Entradas x Saídas — últimos 12 meses</h2>
           <p className="mb-3 text-xs text-slate-500">
             Regime de caixa (mesma base do DFC), até {MESES_CURTO[ctx.mes - 1]}/{ctx.ano}
@@ -97,7 +97,7 @@ export default async function Painel({
           <GraficoEntradasSaidas pontos={caixa12} />
         </Cartao>
 
-        <Cartao className="p-4">
+        <Cartao tour="grafico-resultado" className="p-4">
           <h2 className="text-sm font-semibold">Resultado mensal — últimos 12 meses</h2>
           <p className="mb-3 text-xs text-slate-500">
             Regime de competência (mesma conta da DRE: faturamento × margem − despesas)
@@ -105,7 +105,7 @@ export default async function Painel({
           <GraficoResultado pontos={resultado12} />
         </Cartao>
 
-        <Cartao className="p-4">
+        <Cartao tour="despesas-grupo" className="p-4">
           <div className="mb-3 flex items-baseline justify-between gap-2">
             <div>
               <h2 className="text-sm font-semibold">Despesas por grupo — {MESES[ctx.mes - 1]}/{ctx.ano}</h2>
@@ -116,7 +116,7 @@ export default async function Painel({
           <BarrasHorizontais itens={itensGrupo} vazio="Nenhuma despesa com competência neste mês." />
         </Cartao>
 
-        <Cartao className="p-4">
+        <Cartao tour="contas-pagar" className="p-4">
           <div className="mb-3 flex items-baseline justify-between gap-2">
             <div>
               <h2 className="text-sm font-semibold">Contas a pagar — atrasado e próximos 30 dias</h2>
@@ -136,7 +136,7 @@ export default async function Painel({
 
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Começar por aqui</h2>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div data-tour="atalhos" className="grid gap-3 sm:grid-cols-3">
           {[
             { href: "/pagamentos", t: "Pagamentos", d: "Tudo que venceu ou foi pago no mês" },
             { href: "/receitas", t: "Receitas", d: "Tudo que entrou no caixa" },

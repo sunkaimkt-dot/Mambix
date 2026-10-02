@@ -68,7 +68,7 @@ export default async function Pagamentos({
         ctx={ctx}
       />
 
-      <Cartao className="mb-6 p-4">
+      <Cartao tour="form" className="mb-6 p-4">
         <FormPagamento
           empresaId={ctx.empresaId}
           lojas={ctx.lojas}
@@ -80,7 +80,7 @@ export default async function Pagamentos({
         />
       </Cartao>
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+      <div data-tour="totais" className="mb-6 grid gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <p className="text-xs uppercase tracking-wide text-slate-500">Total do mês (competência)</p>
           <p className="text-xl font-bold">{brl(total)}</p>
@@ -96,7 +96,7 @@ export default async function Pagamentos({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_260px]">
-        <Cartao className="overflow-hidden">
+        <Cartao tour="lista" className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -149,7 +149,7 @@ export default async function Pagamentos({
           </div>
         </Cartao>
 
-        <Cartao className="h-fit p-4">
+        <Cartao tour="grupos" className="h-fit p-4">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Total por grupo</p>
           <ul className="space-y-1.5 text-sm">
             {grupos.map((g) => (

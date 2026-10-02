@@ -46,7 +46,7 @@ export default async function FluxoDiario({
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{avisoSaldo}</p>
       )}
 
-      <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section data-tour="indicadores" className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { rotulo: "Saldo inicial", valor: d.saldoInicialMes, cls: "text-slate-900" },
           { rotulo: "Entradas", valor: d.entradas, cls: "text-positivo" },
@@ -61,7 +61,7 @@ export default async function FluxoDiario({
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_300px]">
-        <Cartao className="overflow-x-auto">
+        <Cartao tour="tabela" className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
               <tr>
@@ -108,7 +108,7 @@ export default async function FluxoDiario({
         </Cartao>
 
         <div className="space-y-6">
-          <Cartao className="p-4">
+          <Cartao tour="cfc" className="p-4">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Saídas por CFC</p>
             <ul className="space-y-1 text-sm">
               {d.porCFC.map((c) => (

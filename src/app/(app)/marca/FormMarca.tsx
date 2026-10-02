@@ -170,7 +170,7 @@ export default function FormMarca({
       )}
 
       <div className="space-y-4">
-        <Cartao className="p-4">
+        <Cartao tour="campos" className="p-4">
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <div>
               <p className="text-sm font-semibold">{alvo.rotulo}</p>
@@ -240,7 +240,7 @@ export default function FormMarca({
         </Cartao>
 
         {/* logo */}
-        <Cartao className="p-4">
+        <Cartao tour="logo" className="p-4">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Logo</p>
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex h-16 w-44 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 p-2">
@@ -275,7 +275,7 @@ export default function FormMarca({
         </Cartao>
 
         {/* previa */}
-        <Cartao className="p-4">
+        <Cartao tour="previa" className="p-4">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Como vai ficar</p>
           <div
             className="rounded-xl border border-slate-200 p-4"

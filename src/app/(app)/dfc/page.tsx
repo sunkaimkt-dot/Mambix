@@ -51,7 +51,7 @@ export default async function DFC({
       <FiltroRelatorio formas={formas} regime="caixa" />
 
       <div className="mb-6 grid gap-6 lg:grid-cols-2">
-        <Cartao className="p-4">
+        <Cartao tour="entradas" className="p-4">
           <div className="mb-3 flex items-baseline justify-between">
             <p className="text-sm font-semibold">Entradas</p>
             <p className="text-lg font-bold text-positivo">{brl(d.entradas)}</p>
@@ -72,7 +72,7 @@ export default async function DFC({
           </table>
         </Cartao>
 
-        <Cartao className="p-4">
+        <Cartao tour="saidas" className="p-4">
           <div className="mb-3 flex items-baseline justify-between">
             <p className="text-sm font-semibold">Saídas por grupo</p>
             <p className="text-lg font-bold text-negativo">{brl(d.saidas)}</p>
@@ -99,7 +99,7 @@ export default async function DFC({
       </div>
 
       <div className="mb-6 grid gap-6 lg:grid-cols-[1fr_320px]">
-        <Cartao className="p-4">
+        <Cartao tour="resultado" className="p-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Entradas</p>
@@ -118,7 +118,7 @@ export default async function DFC({
           </div>
         </Cartao>
 
-        <Cartao className="p-4">
+        <Cartao tour="cfc" className="p-4">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Saídas por CFC</p>
           <ul className="space-y-1 text-sm">
             {d.porCFC.map((c) => (
@@ -131,7 +131,7 @@ export default async function DFC({
         </Cartao>
       </div>
 
-      <Cartao className="p-4">
+      <Cartao tour="codigos" className="p-4">
         <TabelaCodigos
           linhas={d.porCodigo}
           base={base}

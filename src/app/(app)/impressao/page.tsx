@@ -94,7 +94,7 @@ export default async function Impressao({
       <Cabecalho titulo="Impressão / PDF" subtitulo={`${periodo} — versão de papel, no formato da planilha`} ctx={ctx} />
       <CabecalhoImpressao ctx={ctx} titulo={titulo} periodo={periodo} />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2 print:hidden">
+      <div data-tour="abas" className="mb-4 flex flex-wrap items-center gap-2 print:hidden">
         {[
           ["dre", "DRE Gerencial"],
           ["dfc", "Fluxo de Caixa (DFC)"],
@@ -159,7 +159,7 @@ export default async function Impressao({
         </Cartao>
       </div>
 
-      <Cartao className="p-3">
+      <Cartao tour="codigos" className="p-3">
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Códigos de despesa</p>
         <div className="grid gap-6 md:grid-cols-2 print:grid-cols-2">
           {tabelaCodigos(metade[0])}

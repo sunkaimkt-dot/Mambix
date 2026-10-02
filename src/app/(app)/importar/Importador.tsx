@@ -328,7 +328,7 @@ export default function Importador({
   return (
     <div className="space-y-6">
       {/* 1. Tipo, loja, arquivo */}
-      <Cartao className="p-4">
+      <Cartao tour="importar-tipo" className="p-4">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
           <p className="text-sm font-semibold">1. O que você vai importar</p>
           <a href={MODELO} download className="text-sm font-medium text-marca hover:underline">

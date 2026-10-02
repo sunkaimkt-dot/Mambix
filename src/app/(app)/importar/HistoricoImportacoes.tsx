@@ -53,7 +53,7 @@ export default function HistoricoImportacoes({ lotes, podeDesfazer }: { lotes: L
   }
 
   return (
-    <Cartao className="mt-6 p-4">
+    <Cartao tour="historico" className="mt-6 p-4">
       <p className="mb-3 text-sm font-semibold">Importações anteriores</p>
       {aviso && (
         <div className={`mb-3 rounded-lg p-3 text-sm ${aviso.ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>

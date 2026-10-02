@@ -48,7 +48,7 @@ export default function FiltroRelatorio({
   }
 
   return (
-    <div className={`mb-4 rounded-xl border p-3 ${ativo ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-white"}`}>
+    <div data-tour="filtro" className={`mb-4 rounded-xl border p-3 ${ativo ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-white"}`}>
       <form
         onSubmit={(e) => {
           e.preventDefault();

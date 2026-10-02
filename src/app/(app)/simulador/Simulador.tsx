@@ -136,7 +136,7 @@ export default function Simulador({
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-1 rounded-lg bg-slate-100 p-1 text-sm sm:w-fit">
+      <div data-tour="regime" className="flex gap-1 rounded-lg bg-slate-100 p-1 text-sm sm:w-fit">
         {(["dre", "dfc"] as const).map((a) => (
           <button
             key={a}
@@ -161,7 +161,7 @@ export default function Simulador({
       )}
 
       <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
-        <Cartao className="h-fit p-4">
+        <Cartao tour="alavancas" className="h-fit p-4">
           <div className="mb-3 flex items-baseline justify-between">
             <p className="text-sm font-semibold">Alavancas</p>
             {algumAjuste && (
@@ -215,7 +215,7 @@ export default function Simulador({
             </Cartao>
           ) : (
             <>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div data-tour="resultado" className="grid gap-4 sm:grid-cols-3">
                 <Cartao className="p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Resultado base</p>
                   <p className={`text-lg font-bold ${r.base >= 0 ? "text-positivo" : "text-negativo"}`}>{brl(r.base)}</p>

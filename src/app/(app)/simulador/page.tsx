@@ -33,7 +33,7 @@ export default async function PaginaSimulador({
         ctx={ctx}
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+      <div data-tour="base" className="mb-4 flex flex-wrap items-center gap-2 text-sm">
         <span className="text-slate-500">Base:</span>
         {PERIODOS_BASE.map((p) => (
           <Link

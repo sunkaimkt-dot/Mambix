@@ -74,7 +74,7 @@ export default async function Parametros({
         subtitulo={`${MESES[ctx.mes - 1]}/${ctx.ano} — margem bruta, número de clientes e saldo inicial dos bancos`}
         ctx={ctx}
       />
-      <Cartao className="max-w-xl p-5">
+      <Cartao tour="margem" className="max-w-xl p-5">
         <FormParametros
           empresaId={ctx.empresaId}
           ano={ctx.ano}
@@ -84,7 +84,7 @@ export default async function Parametros({
         />
       </Cartao>
 
-      <Cartao className="mt-6 max-w-xl p-5">
+      <Cartao tour="saldos" className="mt-6 max-w-xl p-5">
         <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
           Saldo inicial dos bancos — 1º de {MESES[ctx.mes - 1]}/{ctx.ano}
         </p>

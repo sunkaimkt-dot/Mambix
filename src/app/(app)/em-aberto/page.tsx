@@ -67,7 +67,7 @@ export default async function EmAberto({
   function Tabela({ linhas, titulo, alerta }: { linhas: typeof lista; titulo: string; alerta?: boolean }) {
     if (linhas.length === 0) return null;
     return (
-      <Cartao className="mb-6">
+      <Cartao tour={alerta ? "vencidas" : "a-vencer"} className="mb-6">
         <p className={`border-b border-slate-100 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide ${
           alerta ? "text-negativo" : "text-slate-500"
         }`}>
@@ -136,7 +136,7 @@ export default async function EmAberto({
         ctx={ctx}
       />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-2">
+      <div data-tour="totais" className="mb-6 grid gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <p className="text-xs uppercase tracking-wide text-slate-500">Total em aberto</p>
           <p className="text-xl font-bold text-amber-700">{brl(totalAberto)}</p>

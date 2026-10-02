@@ -18,8 +18,13 @@ export function Campo({
   );
 }
 
-export function Cartao({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-xl border border-slate-200 bg-white ${className}`}>{children}</div>;
+/* `tour`: ancora do tour guiado (data-tour). Ver src/lib/tours.ts. */
+export function Cartao({ children, className = "", tour }: { children: React.ReactNode; className?: string; tour?: string }) {
+  return (
+    <div data-tour={tour} className={`rounded-xl border border-slate-200 bg-white ${className}`}>
+      {children}
+    </div>
+  );
 }
 
 export function Vazio({ texto }: { texto: string }) {

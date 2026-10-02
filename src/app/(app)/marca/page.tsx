@@ -1,3 +1,4 @@
+import BotaoTour from "@/components/BotaoTour";
 import { souAdministrador } from "@/lib/contexto";
 import { supabaseServer } from "@/lib/supabase-server";
 import { urlDaLogo, type Marca } from "@/lib/marca";
@@ -51,7 +52,10 @@ export default async function PaginaMarca() {
   return (
     <main className="p-6">
       <div className="mb-6">
-        <h1 className="text-lg font-bold">Marca e cores</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-lg font-bold">Marca e cores</h1>
+          <BotaoTour />
+        </div>
         <p className="text-sm text-slate-500">
           Logo, nome e cores da Mambix. Vale para a equipe e para todos os clientes.
         </p>

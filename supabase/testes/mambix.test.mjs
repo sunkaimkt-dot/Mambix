@@ -142,5 +142,16 @@ checa("Logo da Mambix: admin pode, operador não",
   (await como(uAdmin, `select pode_gravar_logo('plataforma/x/logo.png') p`)).rows[0].p === true &&
   (await como(uOper, `select pode_gravar_logo('plataforma/x/logo.png') p`)).rows[0].p === false);
 
+console.log("\n\x1b[1mTOUR GUIADO\x1b[0m");
+checa("Marca o próprio tour como visto",
+  (await tenta(uCli, `insert into tours_vistos (user_id, tela) values ('${uCli}','dashboard')`)) === null);
+checa("NÃO marca tour no lugar de outra pessoa",
+  (await tenta(uCli, `insert into tours_vistos (user_id, tela) values ('${uAdmin}','dashboard')`)) !== null);
+await como(uAdmin, `insert into tours_vistos (user_id, tela) values ('${uAdmin}','pagamentos')`);
+const vistosCli = (await como(uCli, `select tela from tours_vistos`)).rows.map((r) => r.tela);
+checa("Cada um só enxerga os próprios tours", vistosCli.length === 1 && vistosCli[0] === "dashboard", vistosCli.join(","));
+checa("Tela com nome inválido é recusada",
+  (await tenta(uCli, `insert into tours_vistos (user_id, tela) values ('${uCli}','<script>')`)) !== null);
+
 if (falhas) { console.log(`\n\x1b[31m${falhas} FALHA(S)\x1b[0m`); process.exit(1); }
 console.log("\n\x1b[32m\x1b[1mTODOS OS TESTES DA MAMBIX PASSARAM\x1b[0m");

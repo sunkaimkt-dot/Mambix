@@ -1,12 +1,16 @@
 import { Suspense } from "react";
 import SeletorContexto from "@/components/SeletorContexto";
+import BotaoTour from "@/components/BotaoTour";
 import type { Contexto } from "@/lib/contexto";
 
 export default function Cabecalho({ titulo, subtitulo, ctx }: { titulo: string; subtitulo?: string; ctx: Contexto }) {
   return (
     <header className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-4">
       <div>
-        <h1 className="text-xl font-bold tracking-tight">{titulo}</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-xl font-bold tracking-tight">{titulo}</h1>
+          <BotaoTour />
+        </div>
         {subtitulo && <p className="text-sm text-slate-500">{subtitulo}</p>}
       </div>
       <Suspense fallback={null}>

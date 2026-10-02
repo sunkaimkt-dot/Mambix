@@ -67,7 +67,7 @@ export default function TelaEvolucao({
       <Cabecalho titulo={titulo} subtitulo={subtitulo} ctx={ctx} />
       <CabecalhoImpressao ctx={ctx} titulo={titulo} periodo={`Ano ${ev.ano}${emPct ? ` · em % ${rotuloBase === "faturamento" ? "do faturamento" : "das entradas"}` : " · em R$"}`} />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2 print:hidden">
+      <div data-tour="opcoes" className="mb-4 flex flex-wrap items-center gap-2 print:hidden">
         {botao(!emPct, link({ modo: null }), "R$")}
         {botao(emPct, link({ modo: "pct" }), `% ${rotuloBase === "faturamento" ? "do faturamento" : "das entradas"}`)}
         <span className="mx-2 h-5 w-px bg-slate-200" />
@@ -80,11 +80,11 @@ export default function TelaEvolucao({
         Ano escolhido no seletor acima (o mês não muda nada aqui). Clique numa linha para ver a evolução daquele item.
       </p>
 
-      <Cartao className="mb-6 p-4">
+      <Cartao tour="grafico" className="mb-6 p-4">
         <GraficoEvolucao ano={ev.ano} {...ev.grafico} />
       </Cartao>
 
-      <Cartao className="overflow-x-auto">
+      <Cartao tour="tabela" className="overflow-x-auto">
         <table className="w-full min-w-[1100px] text-xs print:min-w-0 print:text-[8px]">
           <thead>
             <tr className="border-b border-slate-200 text-[10px] uppercase tracking-wide text-slate-500">

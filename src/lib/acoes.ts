@@ -746,3 +746,20 @@ export async function salvarSaldoInicial(fd: FormData): Promise<Resultado> {
   revalidatePath("/fluxo-diario");
   return { ok: true };
 }
+
+// ============================================================
+// Tour guiado
+// ============================================================
+
+/** Marca que a pessoa logada ja viu (ou pulou) o tour desta tela. */
+export async function marcarTourVisto(tela: string): Promise<Resultado> {
+  if (!/^[a-z0-9-]{1,40}$/.test(tela)) return { ok: false, erro: "Tela inválida." };
+  const supabase = await supabaseServer();
+  const { data: sessao } = await supabase.auth.getUser();
+  if (!sessao.user) return { ok: false, erro: "Sem sessão." };
+  const { error } = await supabase
+    .from("tours_vistos")
+    .upsert({ user_id: sessao.user.id, tela, visto_em: new Date().toISOString() }, { onConflict: "user_id,tela" });
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  return { ok: true };
+}

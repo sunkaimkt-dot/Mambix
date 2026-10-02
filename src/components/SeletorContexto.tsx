@@ -37,7 +37,7 @@ export default function SeletorContexto({ empresas, empresaId, lojas, lojaId, me
     "rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-marca";
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div data-tour="seletor" className="flex flex-wrap items-center gap-2">
       <select className={base} value={empresaId} onChange={(e) => troca("empresa", e.target.value)}>
         {empresas.map((e) => (
           <option key={e.id} value={e.id}>{e.nome}</option>

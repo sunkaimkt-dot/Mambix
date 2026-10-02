@@ -78,7 +78,7 @@ export default function Navegacao({ papel = "empresario" }: { papel?: "plataform
   const grupos = GRUPOS.filter((g) => !g.soGestor || papel !== "empresario");
 
   return (
-    <nav className="space-y-6">
+    <nav data-tour="menu" className="space-y-6">
       <Link
         href={`/dashboard${qs ? `?${qs}` : ""}`}
         className={`block rounded-lg px-3 py-2 text-sm font-medium ${

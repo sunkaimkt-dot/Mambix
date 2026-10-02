@@ -14,7 +14,7 @@ export default function CampoLucroDesejavel({
 }) {
   const outros = Object.entries(sp).filter(([k, v]) => k !== "ld" && typeof v === "string") as [string, string][];
   return (
-    <form method="get" className="flex items-end gap-2 print:hidden">
+    <form data-tour="lucro-desejavel" method="get" className="flex items-end gap-2 print:hidden">
       {outros.map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}

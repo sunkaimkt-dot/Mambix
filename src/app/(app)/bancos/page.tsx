@@ -30,7 +30,7 @@ export default async function BancosELojas({
     <main className="p-6">
       <Cabecalho titulo="Bancos e lojas" subtitulo={ctx.empresaNome} ctx={ctx} />
       <div className="grid gap-6 lg:grid-cols-2">
-        <Cartao className="p-4">
+        <Cartao tour="bancos" className="p-4">
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Bancos e caixas</p>
           <p className="mb-4 text-xs text-slate-400">
             Onde o dinheiro entra e sai. Desligar não apaga: o banco só some das listas de lançamento novo. O saldo
@@ -38,7 +38,7 @@ export default async function BancosELojas({
           </p>
           <ListaBancos empresaId={ctx.empresaId} bancos={bancosRes.data ?? []} />
         </Cartao>
-        <Cartao className="p-4">
+        <Cartao tour="lojas" className="p-4">
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Lojas</p>
           <p className="mb-4 text-xs text-slate-400">
             Matriz e filiais. Os relatórios podem ser vistos por loja ou com todas juntas (consolidado).

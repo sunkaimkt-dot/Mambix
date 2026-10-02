@@ -62,7 +62,7 @@ export default async function DRE({
       )}
 
       <div className="mb-6 grid gap-6 lg:grid-cols-2">
-        <Cartao className="p-4">
+        <Cartao tour="faturamento" className="p-4">
           <div className="mb-3 flex items-baseline justify-between">
             <p className="text-sm font-semibold">Faturamento / Vendas</p>
             <p className="text-lg font-bold">{brl(d.faturamento)}</p>
@@ -84,7 +84,7 @@ export default async function DRE({
           </table>
         </Cartao>
 
-        <Cartao className="p-4">
+        <Cartao tour="despesas" className="p-4">
           <div className="mb-3 flex items-baseline justify-between">
             <p className="text-sm font-semibold">Despesas por grupo</p>
             <p className="text-lg font-bold text-negativo">{brl(d.despesas)}</p>
@@ -110,7 +110,7 @@ export default async function DRE({
         </Cartao>
       </div>
 
-      <Cartao className="mb-6 p-4">
+      <Cartao tour="resultado" className="mb-6 p-4">
         <div className="grid gap-4 sm:grid-cols-5">
           {[
             { r: "Faturamento", v: d.faturamento, p: 1, cor: "text-slate-900" },
@@ -133,7 +133,7 @@ export default async function DRE({
         </div>
       </Cartao>
 
-      <Cartao className="p-4">
+      <Cartao tour="codigos" className="p-4">
         <TabelaCodigos
           linhas={d.porCodigo}
           base={base}

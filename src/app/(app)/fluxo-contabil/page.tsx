@@ -84,7 +84,7 @@ export default async function FluxoContabil({
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <Cartao className="p-4">
+        <Cartao tour="demonstrativo" className="p-4">
           <DemonstrativoContabil linhas={linhas} base={f.receitasOperacionais} />
           <div className="mt-4 grid gap-3 border-t border-slate-200 pt-3 sm:grid-cols-3">
             {[
@@ -100,7 +100,7 @@ export default async function FluxoContabil({
           </div>
         </Cartao>
         <div className="space-y-4">
-          <Cartao className="p-4 avoid-break">
+          <Cartao tour="equilibrio" className="p-4 avoid-break">
             <Equilibrio
               e={f.equilibrio}
               rotuloFixos="Despesas fixas"

@@ -37,7 +37,7 @@ export default async function FaturamentoDiario({
         ctx={ctx}
       />
 
-      <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section data-tour="indicadores" className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Cartao className="p-4">
           <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">Faturamento do mês</p>
           <p className="text-xl font-bold tabular-nums">{brl(d.total)}</p>
@@ -65,7 +65,7 @@ export default async function FaturamentoDiario({
         </Cartao>
       </section>
 
-      <Cartao className="mb-6 p-4">
+      <Cartao tour="grafico" className="mb-6 p-4">
         <GraficoDiario
           valores={d.linhas.map((l) => l.total)}
           diasSemana={d.linhas.map((l) => l.diaSemana)}
@@ -77,7 +77,7 @@ export default async function FaturamentoDiario({
       </Cartao>
 
       <div className="mb-6 grid gap-6 lg:grid-cols-2">
-        <Cartao className="p-4">
+        <Cartao tour="semana" className="p-4">
           <p className="mb-1 text-sm font-semibold">Média por dia da semana</p>
           <p className="mb-3 text-xs text-slate-500">Considera só os dias com venda lançada.</p>
           <BarrasHorizontais
@@ -88,7 +88,7 @@ export default async function FaturamentoDiario({
             })}
           />
         </Cartao>
-        <Cartao className="p-4">
+        <Cartao tour="tipos" className="p-4">
           <p className="mb-1 text-sm font-semibold">Por tipo de venda</p>
           <p className="mb-3 text-xs text-slate-500">% sobre o faturamento do mês.</p>
           <BarrasHorizontais
