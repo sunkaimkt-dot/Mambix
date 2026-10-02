@@ -3,7 +3,9 @@ import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase-server";
 import { detalhesCodigo, type LinhaDetalhe, type FiltroRelatorio } from "@/lib/relatorios";
 
-export type Resultado = { ok: boolean; erro?: string };
+// id: lancamento criado (salvarPagamento / salvarReceita). A importacao em
+// massa (Combo 3) precisa dele para registrar o lote e poder desfazer.
+export type Resultado = { ok: boolean; erro?: string; id?: string };
 
 /**
  * Busca a composicao de um codigo sob demanda, quando o usuario abre o modal.
@@ -83,12 +85,13 @@ export async function salvarPagamento(fd: FormData): Promise<Resultado> {
       banco_id: texto(fd, "banco_id"),
       cp: fd.get("cp") ? Number(fd.get("cp")) : null,
     });
-    if (e2) return { ok: false, erro: amigavel(e2.message) };
+    // O lancamento ficou gravado (em aberto): devolve o id mesmo no erro.
+    if (e2) return { ok: false, erro: amigavel(e2.message), id: criado.id };
   }
 
   revalidatePath("/pagamentos");
   revalidatePath("/em-aberto");
-  return { ok: true };
+  return { ok: true, id: criado?.id };
 }
 
 /**
@@ -157,18 +160,22 @@ export async function salvarReceita(fd: FormData): Promise<Resultado> {
   if (valor === null || valor === 0) return { ok: false, erro: "Informe um valor válido." };
 
   const supabase = await supabaseServer();
-  const { error } = await supabase.from("receitas").insert({
-    empresa_id: texto(fd, "empresa_id")!,
-    loja_id: texto(fd, "loja_id"),
-    data: texto(fd, "data")!,
-    descricao: texto(fd, "descricao") ?? "",
-    valor,
-    banco_id: texto(fd, "banco_id"),
-    tipo_recebimento: Number(fd.get("tipo_recebimento")),
-  });
+  const { data: criada, error } = await supabase
+    .from("receitas")
+    .insert({
+      empresa_id: texto(fd, "empresa_id")!,
+      loja_id: texto(fd, "loja_id"),
+      data: texto(fd, "data")!,
+      descricao: texto(fd, "descricao") ?? "",
+      valor,
+      banco_id: texto(fd, "banco_id"),
+      tipo_recebimento: Number(fd.get("tipo_recebimento")),
+    })
+    .select("id")
+    .single();
   if (error) return { ok: false, erro: amigavel(error.message) };
   revalidatePath("/receitas");
-  return { ok: true };
+  return { ok: true, id: criada?.id };
 }
 
 export async function salvarCaixa(fd: FormData): Promise<Resultado> {
