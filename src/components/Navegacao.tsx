@@ -14,7 +14,7 @@ const GRUPOS: Grupo[] = [
       { href: "/receitas", rotulo: "Receitas", pronto: true },
       { href: "/caixa", rotulo: "Caixa Diário", pronto: true },
       { href: "/parametros", rotulo: "Parâmetros do mês", pronto: true },
-      { href: "/importar", rotulo: "Importar Excel / PDF", pronto: false },
+      { href: "/importar", rotulo: "Importar Excel / PDF", pronto: true },
     ],
   },
   {
@@ -35,7 +35,7 @@ const GRUPOS: Grupo[] = [
       { href: "/evolucao-dre", rotulo: "Evolução DRE", pronto: false },
       { href: "/evolucao-dfc", rotulo: "Evolução DFC", pronto: false },
       { href: "/graficos", rotulo: "Gráficos", pronto: false },
-      { href: "/simulador", rotulo: "Simulador de cenários", pronto: false },
+      { href: "/simulador", rotulo: "Simulador de cenários", pronto: true },
       { href: "/familia", rotulo: "DRE Família", pronto: false },
     ],
   },
