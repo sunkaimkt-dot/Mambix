@@ -38,8 +38,8 @@ export default async function Importar({
   return (
     <main className="p-6">
       <Cabecalho
-        titulo="Importar Excel / CSV"
-        subtitulo="Pagamentos, receitas e caixa diário em lote — confere linha a linha antes de gravar"
+        titulo="Importar Excel, CSV ou extrato"
+        subtitulo="Planilhas de pagamentos, receitas e caixa diário, ou extrato bancário (PDF/OFX) — confere linha a linha antes de gravar"
         ctx={ctx}
       />
 

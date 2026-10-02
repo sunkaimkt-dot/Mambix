@@ -26,6 +26,8 @@ import {
 } from "@/lib/importacao";
 import { buscarExistentes, criarLote, finalizarLote, gravarLinhas, type ResultadoLinha } from "@/lib/importacao-acoes";
 import { Campo, Cartao, inputCls } from "@/components/ui";
+import { lerLinhasExtrato, lerOFX, prepararRevisao, revisaoParaAbas, type LinhaRevisao } from "@/lib/extrato";
+import RevisaoExtrato from "./RevisaoExtrato";
 import { brl } from "@/lib/formato";
 
 const PEDACO = 25;
@@ -56,8 +58,33 @@ async function lerArquivo(arquivo: File): Promise<Aba[]> {
     return [{ nome: arquivo.name, dados: lerCSV(decodificarTexto(bytes)) }];
   }
   if (nome.endsWith(".xls")) throw new Error("Arquivo .xls (Excel antigo) não é lido. No Excel, use Salvar como → Pasta de Trabalho do Excel (.xlsx).");
-  if (nome.endsWith(".pdf")) throw new Error("PDF ainda não é importado — por enquanto só Excel (.xlsx) e CSV.");
-  throw new Error("Formato não reconhecido. Use .xlsx ou .csv.");
+  throw new Error("Formato não reconhecido. Use .xlsx, .csv, .pdf (extrato) ou .ofx.");
+}
+
+const ehExtrato = (nome: string) => /\.(pdf|ofx)$/i.test(nome);
+
+/** Extrato em PDF ou OFX -> movimentos com classificacao sugerida (sem gravar nada). */
+async function lerExtrato(arquivo: File): Promise<LinhaRevisao[]> {
+  if (/\.ofx$/i.test(arquivo.name)) {
+    const bytes = new Uint8Array(await arquivo.arrayBuffer());
+    const movs = lerOFX(decodificarTexto(bytes));
+    if (!movs.length) throw new Error("Nenhum movimento encontrado neste OFX.");
+    return prepararRevisao(movs);
+  }
+  const { linhasDoPDF } = await import("@/lib/pdf-texto");
+  const linhas = await linhasDoPDF(arquivo);
+  if (!linhas.length) {
+    throw new Error(
+      "Este PDF não tem texto (parece uma imagem escaneada). Baixe o extrato pelo internet banking em PDF ou, melhor ainda, em OFX."
+    );
+  }
+  const movs = lerLinhasExtrato(linhas);
+  if (!movs.length) {
+    throw new Error(
+      "Não foi possível achar movimentos neste PDF (linhas com data e valor). Tente exportar o extrato em OFX ou Excel pelo internet banking."
+    );
+  }
+  return prepararRevisao(movs);
 }
 
 function abaDoTipo(abas: Aba[], tipo: TipoImportacao) {
@@ -96,6 +123,8 @@ export default function Importador({
   const [resumo, setResumo] = useState<Resumo | null>(null);
   // Muda a cada "importar outro arquivo" para limpar o campo de arquivo.
   const [chaveArquivo, setChaveArquivo] = useState(0);
+  // Extrato (PDF/OFX): passa por uma revisao antes de virar "planilha".
+  const [revisao, setRevisao] = useState<LinhaRevisao[] | null>(null);
 
   const planilha: Planilha | null = useMemo(
     () => (abas[abaIdx] ? separarCabecalho(abas[abaIdx].dados) : null),
@@ -125,9 +154,21 @@ export default function Importador({
   async function escolherArquivo(arquivo: File | undefined) {
     recomecar();
     setAbas([]);
+    setRevisao(null);
     setNomeArquivo("");
     if (!arquivo) return;
     setOcupado("Lendo o arquivo…");
+    if (ehExtrato(arquivo.name)) {
+      try {
+        setRevisao(await lerExtrato(arquivo));
+        setNomeArquivo(arquivo.name);
+      } catch (e) {
+        setErro(e instanceof Error ? e.message : "Não foi possível ler o extrato.");
+      } finally {
+        setOcupado(null);
+      }
+      return;
+    }
     try {
       const lidas = (await lerArquivo(arquivo)).filter((a) => a.dados.length > 0);
       if (!lidas.length) throw new Error("O arquivo está vazio.");
@@ -141,6 +182,19 @@ export default function Importador({
     } finally {
       setOcupado(null);
     }
+  }
+
+  function usarRevisao(rev: LinhaRevisao[]) {
+    setRevisao(rev);
+    const novas = revisaoParaAbas(rev);
+    // Extrato nao tem caixa diario: comeca pelos pagamentos (debitos).
+    const t: TipoImportacao = tipo === "receitas" ? "receitas" : "pagamentos";
+    const i = abaDoTipo(novas, t);
+    setTipo(t);
+    setAbas(novas);
+    setAbaIdx(i);
+    setMapa(mapearAutomatico(t, separarCabecalho(novas[i].dados).cabecalho));
+    recomecar();
   }
 
   async function conferir() {
@@ -308,11 +362,11 @@ export default function Importador({
               </select>
             </Campo>
           )}
-          <Campo rotulo="Arquivo (.xlsx ou .csv)">
+          <Campo rotulo="Arquivo (.xlsx, .csv, extrato .pdf ou .ofx)">
             <input
               key={chaveArquivo}
               type="file"
-              accept=".xlsx,.csv,.txt"
+              accept=".xlsx,.csv,.txt,.pdf,.ofx"
               onChange={(e) => escolherArquivo(e.target.files?.[0])}
               className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-slate-200"
             />
@@ -324,9 +378,35 @@ export default function Importador({
           {tipo === "receitas" && "Cada linha vira uma entrada em Receitas — é o que alimenta o DFC (regime de caixa)."}
           {tipo === "caixa_diario" &&
             "Cada linha soma no Caixa Diário do dia e tipo de venda — é o que alimenta o faturamento da DRE e o Faturamento Diário. Linhas do mesmo dia e tipo são somadas."}{" "}
-          PDF ainda não é importado.
+          Extrato bancário em PDF ou OFX: as saídas viram Pagamentos (já pagos) e as entradas viram Receitas, depois
+          de você revisar a classificação.
         </p>
       </Cartao>
+
+      {/* 2a. Revisao do extrato */}
+      {revisao && !abas.length && !resumo && (
+        <Cartao className="p-4">
+          <RevisaoExtrato
+            key={nomeArquivo}
+            nomeArquivo={nomeArquivo}
+            linhasIniciais={revisao}
+            referencias={referencias}
+            semBanco={!bancoId}
+            aoConfirmar={usarRevisao}
+            aoCancelar={() => { setRevisao(null); setNomeArquivo(""); setChaveArquivo((k) => k + 1); }}
+          />
+        </Cartao>
+      )}
+
+      {revisao && abas.length > 0 && !resumo && (
+        <p className="rounded-lg bg-marca-clara px-3 py-2 text-xs text-marca-escura">
+          Extrato revisado. Ele vira duas importações: <strong>Pagamentos</strong> (saídas) e <strong>Receitas</strong>{" "}
+          (entradas) — importe uma, depois troque o tipo no passo 1 e importe a outra.{" "}
+          <button type="button" onClick={() => { setAbas([]); recomecar(); }} className="font-medium underline">
+            Voltar à revisão
+          </button>
+        </p>
+      )}
 
       {/* 2. Colunas */}
       {planilha && !resumo && (
@@ -541,10 +621,22 @@ export default function Importador({
             </>
           )}
           <p className="mt-3 text-xs text-slate-500">Se algo não estiver certo, desfaça a importação inteira no histórico abaixo.</p>
-          <div className="mt-3">
+          <div className="mt-3 flex flex-wrap gap-2">
+            {revisao && abas.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setResumo(null);
+                  trocarTipo(tipo === "pagamentos" ? "receitas" : "pagamentos");
+                }}
+                className="rounded-lg bg-marca px-4 py-1.5 text-sm font-semibold text-white hover:bg-marca-escura"
+              >
+                Agora importar as {tipo === "pagamentos" ? "entradas (Receitas)" : "saídas (Pagamentos)"} deste extrato
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => { setResumo(null); setAbas([]); setNomeArquivo(""); setChaveArquivo((k) => k + 1); }}
+              onClick={() => { setResumo(null); setAbas([]); setRevisao(null); setNomeArquivo(""); setChaveArquivo((k) => k + 1); }}
               className="rounded-lg border border-slate-300 px-4 py-1.5 text-sm hover:bg-slate-50"
             >
               Importar outro arquivo
