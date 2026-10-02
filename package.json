@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "testar:banco": "node supabase/testes/hierarquia.test.mjs && node supabase/testes/migracao.test.mjs && node supabase/testes/marca.test.mjs && node supabase/testes/funcoes.test.mjs && node supabase/testes/juros.test.mjs"
+    "testar:banco": "node supabase/testes/hierarquia.test.mjs && node supabase/testes/migracao.test.mjs && node supabase/testes/marca.test.mjs && node supabase/testes/funcoes.test.mjs && node supabase/testes/juros.test.mjs",
+    "testar:relatorios": "node --experimental-strip-types --no-warnings --import ./supabase/testes/relatorios/register.mjs supabase/testes/relatorios/relatorios.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

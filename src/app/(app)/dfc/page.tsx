@@ -2,6 +2,8 @@ import { carregarContexto } from "@/lib/contexto";
 import { supabaseServer } from "@/lib/supabase-server";
 import { dadosDFC, lerFiltro } from "@/lib/relatorios";
 import Cabecalho from "@/components/Cabecalho";
+import CabecalhoImpressao from "@/components/CabecalhoImpressao";
+import BotaoImprimir from "@/components/BotaoImprimir";
 import FiltroRelatorio from "@/components/FiltroRelatorio";
 import TabelaCodigos from "@/components/TabelaCodigos";
 import { Cartao } from "@/components/ui";
@@ -40,6 +42,11 @@ export default async function DFC({
         subtitulo={`${MESES[ctx.mes - 1]}/${ctx.ano} — regime de caixa (só o que entrou e saiu de fato)`}
         ctx={ctx}
       />
+
+      <CabecalhoImpressao ctx={ctx} titulo="Fluxo de Caixa (DFC) — regime de caixa" periodo={`${MESES[ctx.mes - 1]}/${ctx.ano}`} />
+      <div className="mb-3 flex justify-end print:hidden">
+        <BotaoImprimir />
+      </div>
 
       <FiltroRelatorio formas={formas} regime="caixa" />
 

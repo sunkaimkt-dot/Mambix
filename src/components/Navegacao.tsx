@@ -22,18 +22,18 @@ const GRUPOS: Grupo[] = [
     itens: [
       { href: "/dre", rotulo: "DRE Gerencial", pronto: true },
       { href: "/dfc", rotulo: "Fluxo de Caixa (DFC)", pronto: true },
-      { href: "/dre-contabil", rotulo: "DRE Contábil", pronto: false },
-      { href: "/fluxo-contabil", rotulo: "Fluxo Contábil", pronto: false },
+      { href: "/dre-contabil", rotulo: "DRE Contábil", pronto: true },
+      { href: "/fluxo-contabil", rotulo: "Fluxo Contábil", pronto: true },
       { href: "/fluxo-diario", rotulo: "Fluxo Diário", pronto: true },
       { href: "/faturamento-diario", rotulo: "Faturamento Diário", pronto: true },
-      { href: "/impressao", rotulo: "Impressão / PDF", pronto: false },
+      { href: "/impressao", rotulo: "Impressão / PDF", pronto: true },
     ],
   },
   {
     titulo: "Análises",
     itens: [
-      { href: "/evolucao-dre", rotulo: "Evolução DRE", pronto: false },
-      { href: "/evolucao-dfc", rotulo: "Evolução DFC", pronto: false },
+      { href: "/evolucao-dre", rotulo: "Evolução DRE", pronto: true },
+      { href: "/evolucao-dfc", rotulo: "Evolução DFC", pronto: true },
       { href: "/graficos", rotulo: "Gráficos", pronto: false },
       { href: "/simulador", rotulo: "Simulador de cenários", pronto: false },
       { href: "/familia", rotulo: "DRE Família", pronto: false },
