@@ -153,5 +153,20 @@ checa("Cada um só enxerga os próprios tours", vistosCli.length === 1 && vistos
 checa("Tela com nome inválido é recusada",
   (await tenta(uCli, `insert into tours_vistos (user_id, tela) values ('${uCli}','<script>')`)) !== null);
 
+console.log("\n\x1b[1mCHAT DE DÚVIDAS\x1b[0m");
+checa("Cliente registra a própria pergunta",
+  (await tenta(uCli, `insert into ajuda_perguntas (tela, pergunta, resposta) values ('pagamentos','como dou baixa?','Clique no selo.')`)) === null);
+checa("NÃO registra pergunta em nome de outra pessoa",
+  (await tenta(uCli, `insert into ajuda_perguntas (user_id, pergunta) values ('${uAdmin}','x')`)) !== null);
+await como(uOper, `insert into ajuda_perguntas (pergunta) values ('pergunta do operador')`);
+checa("Cliente só lê as próprias perguntas",
+  (await como(uCli, `select count(*)::int n from ajuda_perguntas`)).rows[0].n === 1);
+checa("Operador só lê as próprias perguntas",
+  (await como(uOper, `select count(*)::int n from ajuda_perguntas`)).rows[0].n === 1);
+checa("Administrador da Mambix lê todas",
+  (await como(uAdmin, `select count(*)::int n from ajuda_perguntas`)).rows[0].n === 2);
+checa("Pergunta vazia é recusada",
+  (await tenta(uCli, `insert into ajuda_perguntas (pergunta) values ('')`)) !== null);
+
 if (falhas) { console.log(`\n\x1b[31m${falhas} FALHA(S)\x1b[0m`); process.exit(1); }
 console.log("\n\x1b[32m\x1b[1mTODOS OS TESTES DA MAMBIX PASSARAM\x1b[0m");

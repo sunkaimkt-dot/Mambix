@@ -6,6 +6,7 @@ import Navegacao from "@/components/Navegacao";
 import TourGuiado from "@/components/TourGuiado";
 import TourBoasVindas from "@/components/TourBoasVindas";
 import BotaoTourCompleto from "@/components/BotaoTourCompleto";
+import ChatAjuda from "@/components/ChatAjuda";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await supabaseServer();
@@ -70,6 +71,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
       <div className="min-w-0 flex-1">{children}</div>
+      {/* Chat de duvidas: so aparece quando a chave da IA esta configurada. */}
+      {process.env.GEMINI_API_KEY && <ChatAjuda />}
       <TourBoasVindas
         vistos={(toursRes.data ?? []).map((t) => t.tela as string)}
         papel={(perfil?.papel as "plataforma" | "gestor" | "empresario") ?? "empresario"}
