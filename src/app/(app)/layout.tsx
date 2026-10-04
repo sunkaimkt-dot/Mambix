@@ -4,6 +4,8 @@ import { supabaseServer } from "@/lib/supabase-server";
 import { carregarMarca, urlDaLogo, MARCA_PADRAO, portaDeEntrada } from "@/lib/marca";
 import Navegacao from "@/components/Navegacao";
 import TourGuiado from "@/components/TourGuiado";
+import TourBoasVindas from "@/components/TourBoasVindas";
+import BotaoTourCompleto from "@/components/BotaoTourCompleto";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await supabaseServer();
@@ -61,12 +63,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                   ? "Cliente"
                   : "sem perfil"}
           </p>
+          <BotaoTourCompleto />
           <form action="/auth/signout" method="post">
             <button className="text-xs text-slate-500 underline hover:text-slate-800">Sair</button>
           </form>
         </div>
       </aside>
       <div className="min-w-0 flex-1">{children}</div>
+      <TourBoasVindas
+        vistos={(toursRes.data ?? []).map((t) => t.tela as string)}
+        papel={(perfil?.papel as "plataforma" | "gestor" | "empresario") ?? "empresario"}
+        autoInicio={!toursRes.error}
+      />
       <TourGuiado
         vistos={(toursRes.data ?? []).map((t) => t.tela as string)}
         papel={(perfil?.papel as "plataforma" | "gestor" | "empresario") ?? "empresario"}
