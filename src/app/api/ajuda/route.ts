@@ -25,7 +25,8 @@ export const maxDuration = 30;
 
 type Msg = { de: "voce" | "assistente"; texto: string };
 
-const MODELO_PADRAO = "gemini-3.5-flash-lite";
+/** Ordem de tentativa (rapidos e baratos primeiro). GEMINI_MODEL, se houver, vem antes. */
+const MODELOS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.8-flash"];
 
 function falha(status: number, erro: string) {
   return NextResponse.json({ erro }, { status });
@@ -90,40 +91,54 @@ export async function POST(req: Request) {
     parts: [{ text: m.texto }],
   }));
 
-  const modelo = process.env.GEMINI_MODEL || MODELO_PADRAO;
+  // Tenta os modelos em ordem: o plano gratuito nao libera todos, e cada um
+  // tem a propria cota. O primeiro que responder vence (fica no log).
+  const modelos = Array.from(new Set([process.env.GEMINI_MODEL, ...MODELOS].filter(Boolean))) as string[];
+  const base = process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com"; // BASE_URL so p/ teste local
+  const corpoIA = JSON.stringify({
+    systemInstruction: { parts: [{ text: montarInstrucoes(papel, pathname) }] },
+    contents,
+    generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
+  });
+  const prazo = Date.now() + 26_000;
   let resposta = "";
-  try {
-    const r = await fetch(
-      // GEMINI_BASE_URL so existe para teste local (servidor falso); em producao fica vazio.
-      `${process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com"}/v1beta/models/${encodeURIComponent(modelo)}:generateContent`,
-      {
+  let ultimoStatus = 0;
+  for (const modelo of modelos) {
+    const resta = prazo - Date.now();
+    if (resta < 3_000) break;
+    try {
+      const r = await fetch(`${base}/v1beta/models/${encodeURIComponent(modelo)}:generateContent`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": chave },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: montarInstrucoes(papel, pathname) }] },
-          contents,
-          generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
-        }),
-        signal: AbortSignal.timeout(25_000),
+        body: corpoIA,
+        signal: AbortSignal.timeout(Math.min(15_000, resta)),
+      });
+      ultimoStatus = r.status;
+      if (!r.ok) {
+        console.error(`ajuda: ${modelo} respondeu ${r.status}`, (await r.text()).slice(0, 300));
+        // Chave invalida: nao adianta trocar de modelo.
+        if (r.status === 401) break;
+        continue;
       }
-    );
-    if (r.status === 429)
-      return falha(429, "O assistente está muito requisitado agora. Tente de novo em alguns minutos.");
-    if (!r.ok) {
-      console.error("ajuda: gemini respondeu", r.status, (await r.text()).slice(0, 500));
-      return falha(502, "O assistente não conseguiu responder agora. Tente de novo em instantes.");
+      const j = (await r.json()) as {
+        candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[];
+      };
+      resposta = (j.candidates?.[0]?.content?.parts ?? [])
+        .filter((p) => !p.thought && typeof p.text === "string")
+        .map((p) => p.text)
+        .join("")
+        .trim();
+      console.log(`ajuda: respondido por ${modelo}`);
+      break;
+    } catch (e) {
+      ultimoStatus = 504;
+      console.error(`ajuda: falha ao chamar ${modelo}`, e);
     }
-    const j = (await r.json()) as {
-      candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[];
-    };
-    resposta = (j.candidates?.[0]?.content?.parts ?? [])
-      .filter((p) => !p.thought && typeof p.text === "string")
-      .map((p) => p.text)
-      .join("")
-      .trim();
-  } catch (e) {
-    console.error("ajuda: falha ao chamar o gemini", e);
-    return falha(504, "O assistente demorou demais para responder. Tente de novo.");
+  }
+  if (!resposta && ultimoStatus !== 200) {
+    if (ultimoStatus === 429)
+      return falha(429, "O assistente está muito requisitado agora. Tente de novo em alguns minutos.");
+    return falha(502, "O assistente não conseguiu responder agora. Tente de novo em instantes.");
   }
   if (!resposta) resposta = "Não consegui responder essa. Tente perguntar de outro jeito ou fale com a Mambix.";
 
