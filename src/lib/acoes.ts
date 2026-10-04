@@ -763,3 +763,18 @@ export async function marcarTourVisto(tela: string): Promise<Resultado> {
   if (error) return { ok: false, erro: amigavel(error.message) };
   return { ok: true };
 }
+
+/** Varias telas de uma vez (fim do tour completo de boas-vindas). */
+export async function marcarToursVistos(telas: string[]): Promise<Resultado> {
+  const validas = telas.filter((t) => /^[a-z0-9-]{1,40}$/.test(t)).slice(0, 40);
+  if (!validas.length) return { ok: true };
+  const supabase = await supabaseServer();
+  const { data: sessao } = await supabase.auth.getUser();
+  if (!sessao.user) return { ok: false, erro: "Sem sessão." };
+  const agora = new Date().toISOString();
+  const { error } = await supabase
+    .from("tours_vistos")
+    .upsert(validas.map((tela) => ({ user_id: sessao.user!.id, tela, visto_em: agora })), { onConflict: "user_id,tela" });
+  if (error) return { ok: false, erro: amigavel(error.message) };
+  return { ok: true };
+}
