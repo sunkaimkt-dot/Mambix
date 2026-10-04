@@ -11,7 +11,8 @@
     "testar:relatorios": "node --experimental-strip-types --no-warnings --import ./supabase/testes/relatorios/register.mjs supabase/testes/relatorios/relatorios.test.mjs",
     "testar:combo3": "node --experimental-strip-types --no-warnings --import ./supabase/testes/combo3/register.mjs supabase/testes/combo3/combo3.test.mjs",
     "testar:graficos": "node --experimental-strip-types --no-warnings --import ./supabase/testes/relatorios/register.mjs supabase/testes/relatorios/graficos.test.mjs",
-    "testar:extrato": "node --experimental-strip-types --no-warnings --import ./supabase/testes/relatorios/register.mjs supabase/testes/relatorios/extrato.test.mjs"
+    "testar:extrato": "node --experimental-strip-types --no-warnings --import ./supabase/testes/relatorios/register.mjs supabase/testes/relatorios/extrato.test.mjs",
+    "testar:ajuda": "node --experimental-strip-types --no-warnings --import ./supabase/testes/relatorios/register.mjs supabase/testes/relatorios/ajuda.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

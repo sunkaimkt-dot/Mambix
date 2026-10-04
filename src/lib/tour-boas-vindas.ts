@@ -206,9 +206,17 @@ export const JORNADA: PassoJornada[] = [
   {
     rota: "/dashboard",
     secao: "Pronto!",
+    alvo: "ajuda",
+    titulo: "Ficou com dúvida? Pergunte aqui",
+    texto:
+      "O botão Dúvidas?, no canto da tela, abre um assistente que explica como fazer qualquer coisa no sistema. Ele sabe em que tela você está.\n\nEle não vê os números da empresa — e não escreva senhas nem dados sigilosos nele.",
+  },
+  {
+    rota: "/dashboard",
+    secao: "Pronto!",
     titulo: "Sua rotina no sistema",
     texto:
-      "No dia a dia: Caixa Diário (vendas) e Pagamentos (contas novas).\nToda semana: Receitas e as baixas em Contas em aberto.\nNo fim do mês: Parâmetros do mês e uma olhada na DRE e no Fluxo de Caixa.\n\nCada tela tem o botão \"Tour guiado\" ao lado do título, e este tour completo fica no rodapé do menu. Qualquer dúvida, fale com a Mambix.",
+      "No dia a dia: Caixa Diário (vendas) e Pagamentos (contas novas).\nToda semana: Receitas e as baixas em Contas em aberto.\nNo fim do mês: Parâmetros do mês e uma olhada na DRE e no Fluxo de Caixa.\n\nCada tela tem o botão \"Tour guiado\" ao lado do título, este tour completo fica no rodapé do menu e o botão Dúvidas? responde na hora. Se ainda ficar dúvida, fale com a Mambix.",
   },
 ];
 
